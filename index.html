@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Partially Coherent Light & Diffraction — Thesis</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- MathJax for LaTeX rendering -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        displayMath: [['$$','$$'], ['\\[','\\]']],
+        tags: 'ams',
+        macros: {
+          bra: ['\\langle #1 |', 1],
+          ket: ['| #1 \\rangle', 1],
+          dd: '\\mathrm{d}',
+          ii: '\\mathrm{i}'
+        }
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml-full.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    /* ─── Base ─────────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --border:    #252a38;
+      --gold:      #c9a84c;
+      --gold-dim:  #7a6230;
+      --text:      #e2ddd4;
+      --muted:     #7a7d8a;
+      --accent:    #4a8fa8;
+      --accent2:   #7ecec4;
+      --radius:    6px;
+      --mono:      'JetBrains Mono', monospace;
+      --serif:     'Crimson Pro', Georgia, serif;
+      --display:   'Cinzel', serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--serif);
+      font-size: 18px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ─── Graph-paper background texture ─────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(74,143,168,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74,143,168,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Header ──────────────────────────────────────── */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 3.5rem 4rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(201,168,76,0.06) 0%, transparent 100%);
+    }
+
+    .header-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    header h1 {
+      font-family: var(--display);
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1.25;
+      max-width: 780px;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .header-meta {
+      margin-top: 1.2rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .header-meta span { color: var(--accent2); }
+
+    /* ─── Tab Navigation ──────────────────────────────── */
+    nav.tabs {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      gap: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    nav.tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 0.9rem 1.8rem;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      background: rgba(201,168,76,0.05);
+    }
+
+    /* ─── Tab Panels ──────────────────────────────────── */
+    main { position: relative; z-index: 1; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Overview Panel ──────────────────────────────── */
+    #panel-overview {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3.5rem 2.5rem;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 1.5rem;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    p { margin-bottom: 1.2em; color: var(--text); }
+
+    .abstract-box {
+      border-left: 2px solid var(--gold-dim);
+      padding: 1.2rem 1.8rem;
+      background: rgba(201,168,76,0.04);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 2rem 0;
+      font-style: italic;
+      font-size: 1.05rem;
+      color: #c8c2b8;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 2.5rem 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--gold-dim);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .card-icon {
+      font-size: 1.6rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .card h3 {
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+    }
+
+    .card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    /* ─── iframe Panels ───────────────────────────────── */
+    .iframe-panel {
+      width: 100%;
+      height: calc(100vh - 130px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iframe-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.7rem 1.5rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .iframe-toolbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .iframe-toolbar .dot.green { background: #4caf6e; }
+
+    .iframe-toolbar .filename { color: var(--accent2); letter-spacing: 0.08em; }
+
+    .iframe-toolbar a {
+      margin-left: auto;
+      color: var(--gold-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: color 0.2s;
+    }
+
+    .iframe-toolbar a:hover { color: var(--gold); }
+
+    .iframe-panel iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      background: #fff;
+    }
+
+    /* ─── Math / Derivations Panel ────────────────────── */
+    #panel-math {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 2.5rem 5rem;
+    }
+
+    #panel-math h2 { margin-top: 2.5rem; margin-bottom: 0.8rem; }
+
+    #panel-math h3 {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 2rem 0 0.7rem;
+    }
+
+    #panel-math h4 {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    .math-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      margin: 1.2rem 0;
+      overflow-x: auto;
+    }
+
+    .math-block mjx-container { font-size: 1.05em !important; }
+
+    .eq-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .eq-tag {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--gold-dim);
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      margin-top: 0.2rem;
+    }
+
+    .underbrace-note {
+      background: rgba(74,143,168,0.08);
+      border-left: 2px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 0.5rem 0 1rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .underbrace-note strong { color: var(--accent2); }
+
+    /* Bibliography */
+    .bib-entry {
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .bib-entry .bib-key {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--gold-dim);
+      margin-bottom: 0.2rem;
+    }
+
+    .bib-entry .bib-authors { color: var(--text); }
+    .bib-entry .bib-title  { font-style: italic; color: #b0aa9f; }
+    .bib-entry .bib-venue  { color: var(--muted); }
+
+    /* ─── Paste placeholder ───────────────────────────── */
+    .paste-hint {
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      margin: 2rem 0;
+    }
+
+    .paste-hint .hint-title { color: var(--gold-dim); font-size: 0.85rem; margin-bottom: 0.5rem; }
+
+    /* ─── Scrollbar ───────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+    /* ─── Responsive ──────────────────────────────────── */
+    @media (max-width: 640px) {
+      header { padding: 2rem 1.5rem 1.5rem; }
+      #panel-overview, #panel-math { padding: 2rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ HEADER -->
+<header>
+  <p class="header-eyebrow">MSc / PhD Thesis &nbsp;·&nbsp; Optics &amp; Coherence Theory</p>
+  <h1>Diffraction of <em>Partially Coherent</em> Light<br>through Binary Gratings</h1>
+  <p class="header-meta">
+    Gaussian Schell-Model Beams &nbsp;·&nbsp;
+    Talbot Effect &nbsp;·&nbsp;
+    Cross-Spectral Density Formalism
+    &nbsp;&nbsp;<span>// Rob</span>
+  </p>
+</header>
+
+<!-- ══════════════════════════════════════════════ NAV TABS -->
+<nav class="tabs" id="main-tabs">
+  <button class="tab-btn active" data-target="panel-overview">Overview</button>
+  <button class="tab-btn" data-target="panel-gsm">Gaussian–Schell Demo</button>
+  <button class="tab-btn" data-target="panel-micro">Microfluidic Demo</button>
+  <button class="tab-btn" data-target="panel-math">Derivations</button>
+  <button class="tab-btn" data-target="panel-refs">References</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════ MAIN -->
+<main>
+
+  <!-- ─── OVERVIEW ─────────────────────────────────── -->
+  <section class="tab-panel active" id="panel-overview">
+    <div id="panel-overview">
+
+      <p class="section-label">Abstract</p>
+      <h2>Partially Coherent Beam Propagation through Periodic Structures</h2>
+
+      <div class="abstract-box">
+        <!--  ✏️  REPLACE: paste your abstract here  -->
+        This thesis investigates the propagation of Gaussian Schell-model (GSM) beams
+        through binary diffraction gratings using the cross-spectral density (CSD) formalism.
+        We derive the full intensity pattern at arbitrary propagation distances, recovering
+        the Talbot self-imaging effect and its coherence-dependent modifications.
+        Interactive simulations demonstrate how partial coherence controls fringe visibility,
+        Talbot carpet structure, and Lau-effect resonances.
+      </div>
+
+      <p>Use the tabs above to navigate between the interactive visualizations and the full mathematical derivation.</p>
+
+      <div class="card-grid">
+        <div class="card" onclick="switchTab('panel-gsm')">
+          <div class="card-icon">🌊</div>
+          <h3>Gaussian–Schell Model</h3>
+          <p>Interactive Talbot carpet visualizer with coherence, grating, and propagation controls.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-micro')">
+          <div class="card-icon">🔬</div>
+          <h3>Microfluidic Analysis</h3>
+          <p>Analytic model for partially coherent illumination in microfluidic sensing geometries.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-math')">
+          <div class="card-icon">∫</div>
+          <h3>Full Derivation</h3>
+          <p>Step-by-step LaTeX derivation: CSD propagation, Fresnel integrals, and intensity expression.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-refs')">
+          <div class="card-icon">📚</div>
+          <h3>Bibliography</h3>
+          <p>Mandel &amp; Wolf, Goodman, Friberg &amp; Sudol, Winthrop &amp; Worthington, and more.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── GAUSSIAN-SCHELL DEMO ──────────────────────── -->
+  <section class="tab-panel" id="panel-gsm">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">fullGaussianSchellWeb.html</span>
+        <a href="fullGaussianSchellWeb.html" target="_blank">↗ open standalone</a>
+      </div>
+      <!-- ✏️  src points to your file — no changes needed if co-located -->
+      <iframe
+        src="fullGaussianSchellWeb.html"
+        title="Gaussian Schell-Model Interactive Visualizer"
+        loading="lazy"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── MICROFLUIDIC DEMO ─────────────────────────── -->
+  <section class="tab-panel" id="panel-micro">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">microfluidicAnalyticWeb.html</span>
+        <a href="microfluidicAnalyticWeb.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="microfluidicAnalyticWeb.html"
+        title="Microfluidic Analytic Visualizer"
+        loading="lazy"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── MATH / DERIVATIONS ───────────────────────── -->
+  <section class="tab-panel" id="panel-math">
+    <div id="panel-math">
+
+      <p class="section-label">Mathematical Derivation</p>
+      <h2>Cross-Spectral Density Propagation &amp; Intensity Expression</h2>
+
+      <!-- ════════════ SECTION 1 ════════════ -->
+      <h3>1. The Gaussian Schell-Model Source</h3>
+
+      <p>
+        A GSM source is characterised by a cross-spectral density (CSD) of Gaussian form in both
+        the intensity profile and the spectral degree of coherence:
+      </p>
+
+      <div class="math-block">
+        <div class="eq-label">
+          <div>
+            $$W^{(0)}(x_1, x_2) = \sqrt{S(x_1)\,S(x_2)}\;\mu^{(0)}(x_1-x_2)$$
+          </div>
+          <span class="eq-tag">Eq. 1</span>
+        </div>
+      </div>
+
+      <div class="math-block">
+        <div class="eq-label">
+          <div>
+            $$W^{(0)}(x_1, x_2)
+              = A^2
+                \exp\!\left(-\frac{x_1^2+x_2^2}{4w_0^2}\right)
+                \exp\!\left(-\frac{(x_1-x_2)^2}{2\ell_c^2}\right)$$
+          </div>
+          <span class="eq-tag">Eq. 2</span>
+        </div>
+      </div>
+
+      <div class="underbrace-note">
+        <strong>Parameters:</strong> $w_0$ — beam waist (intensity half-width); $\ell_c$ — transverse coherence length; 
+        $\xi = x/d$ — dimensionless transverse coordinate scaled by grating period $d$.
+      </div>
+
+      <!-- ════════════ SECTION 2 ════════════ -->
+      <h3>2. Free-Space Propagation via Fresnel Integral</h3>
+
+      <p>
+        Under the paraxial approximation the CSD propagates as a double Fresnel integral:
+      </p>
+
+      <div class="math-block">
+        <div class="eq-label">
+          <div>
+            $$W(x_1,x_2;z) = \frac{1}{\lambda^2 z^2}
+              \iint W^{(0)}(x_1',x_2')\,
+              t(x_1')\,t^*(x_2')\,
+              e^{\,\mathrm{i}\frac{\pi}{\lambda z}\left[(x_1-x_1')^2-(x_2-x_2')^2\right]}
+              \,\mathrm{d}x_1'\,\mathrm{d}x_2'$$
+          </div>
+          <span class="eq-tag">Eq. 3</span>
+        </div>
+      </div>
+
+      <!-- ════════════ SECTION 3 ════════════ -->
+      <h3>3. Binary Grating Transmission &amp; Fourier Expansion</h3>
+
+      <p>
+        For a binary grating of period $d$ and open fraction $f$, the transmission function
+        is expanded in Fourier harmonics:
+      </p>
+
+      <div class="math-block">
+        <div class="eq-label">
+          <div>
+            $$t(x) = \sum_{n=-\infty}^{\infty} a_n\,e^{\,2\pi\mathrm{i} n x/d},
+            \qquad
+            a_n = f\,\mathrm{sinc}(nf)$$
+          </div>
+          <span class="eq-tag">Eq. 4</span>
+        </div>
+      </div>
+
+      <!-- ════════════ SECTION 4 ════════════ -->
+      <h3>4. Full Intensity Expression (Double Sum)</h3>
+
+      <p>
+        After evaluating the Fresnel integrals with residual wavefront curvature parameter
+        $\beta = R^{-1}(L) - L^{-1}$ (retained to recover Lau-effect cross-terms), the
+        on-axis intensity at propagation distance $z = 2L$ takes the form:
+      </p>
+
+      <div class="math-block">
+        <div class="eq-label">
+          <div>
+            $$I(\xi,\zeta) = \sum_{m,n}\; a_m a_n^*\;
+              \underbrace{e^{\,2\pi\mathrm{i}(m-n)\xi}}_{\text{fringe tilt }T_1}
+              \underbrace{e^{\,-\mathrm{i}\pi(m^2-n^2)\zeta(1+\zeta/\varrho)}}_{\text{Talbot/curvature }T_2}
+              \underbrace{e^{\,-\pi^2(m+n)^2\,\xi^2/\xi_0^2}}_{\text{envelope tilt }T_3}
+              \underbrace{e^{\,-\pi^2(m-n)^2/(2\xi^2)}}_{\text{order attenuation }T_4}
+              \underbrace{e^{\,-2\pi^2(m-n)^2/\xi_c^2}}_{\text{coherence filter }T_5}$$
+          </div>
+          <span class="eq-tag">Eq. 5</span>
+        </div>
+      </div>
+
+      <div class="underbrace-note">
+        <strong>$T_1$</strong> — spatial fringe carrier (interference between orders $m$ and $n$). &nbsp;
+        <strong>$T_2$</strong> — Talbot phase with wavefront-curvature correction; self-images occur when
+        $\zeta(1+\zeta/\varrho) \in \mathbb{Z}$. &nbsp;
+        <strong>$T_3$</strong> — Gaussian beam envelope tilt from finite beam waist. &nbsp;
+        <strong>$T_4$</strong> — attenuation of high-order cross-terms. &nbsp;
+        <strong>$T_5$</strong> — coherence filter suppressing orders separated by more than $\xi_c \propto \ell_c/d$.
+      </div>
+
+      <!-- ════════════ SECTION 5: USER CONTENT ════════════ -->
+      <h3>5. Additional Derivations</h3>
+
+      <div class="paste-hint">
+        <p class="hint-title">✏️  Paste your .tex content here</p>
+        <p>Open <code>index.html</code> and replace this block with your LaTeX sections.<br>
+           All equations are rendered via MathJax 3 — use standard <code>$$...$$</code> or
+           <code>\[...\]</code> display math and <code>$...$</code> inline math.</p>
+      </div>
+
+      <!-- EXAMPLE of how to add a section from your .tex:
+
+      <h3>5. Limiting Cases</h3>
+      <h4>Fully Coherent Limit ($\ell_c \to \infty$)</h4>
+      <p>When $\ell_c \to \infty$, factor $T_5 \to 1$ for all orders and the intensity reduces to...</p>
+      <div class="math-block">
+        $$I_{\text{coh}}(\xi,\zeta) = \left|\sum_n a_n\,e^{2\pi\mathrm{i}n\xi}
+          e^{-\mathrm{i}\pi n^2 \zeta}\right|^2$$
+      </div>
+
+      <h4>Incoherent Limit ($\ell_c \to 0$)</h4>
+      <div class="math-block">
+        $$I_{\text{incoh}}(\xi) = \sum_n |a_n|^2$$
+      </div>
+
+      -->
+
+    </div>
+  </section>
+
+  <!-- ─── REFERENCES ────────────────────────────────── -->
+  <section class="tab-panel" id="panel-refs">
+    <div id="panel-math"><!-- reuse math styles -->
+
+      <p class="section-label">Bibliography</p>
+      <h2>References</h2>
+
+      <div id="bibliography">
+
+        <div class="bib-entry">
+          <div class="bib-key">[MandelWolf1995]</div>
+          <span class="bib-authors">L. Mandel &amp; E. Wolf</span> —
+          <span class="bib-title">Optical Coherence and Quantum Optics</span>
+          <span class="bib-venue">. Cambridge University Press, 1995.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[Goodman2005]</div>
+          <span class="bib-authors">J. W. Goodman</span> —
+          <span class="bib-title">Introduction to Fourier Optics</span>, 3rd ed.
+          <span class="bib-venue">Roberts &amp; Company, 2005.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[Friberg1982]</div>
+          <span class="bib-authors">A. T. Friberg &amp; R. J. Sudol</span> —
+          <span class="bib-title">Propagation parameters of Gaussian Schell-model beams</span>.
+          <span class="bib-venue">Optics Communications 41(6), 383–387, 1982.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[Friberg1983]</div>
+          <span class="bib-authors">A. T. Friberg &amp; R. J. Sudol</span> —
+          <span class="bib-title">The source correlation function governing partial coherence of Gaussian Schell-model beams</span>.
+          <span class="bib-venue">Optica Acta 30(8), 1075–1097, 1983.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[WinthropWorthington1965]</div>
+          <span class="bib-authors">J. T. Winthrop &amp; C. R. Worthington</span> —
+          <span class="bib-title">Theory of Fresnel Images. I. Plane Periodic Objects in Monochromatic Light</span>.
+          <span class="bib-venue">J. Opt. Soc. Am. 55(4), 373–381, 1965.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[GburVisser2010]</div>
+          <span class="bib-authors">G. Gbur &amp; T. D. Visser</span> —
+          <span class="bib-title">The Structure of Partially Coherent Fields</span>.
+          <span class="bib-venue">Progress in Optics 55, 285–341, 2010.</span>
+        </div>
+
+        <div class="bib-entry">
+          <div class="bib-key">[Piquero2001]</div>
+          <span class="bib-authors">G. Piquero, R. Borghi &amp; M. Santarsiero</span> —
+          <span class="bib-title">Gaussian Schell-model beams propagating through polarization gratings</span>.
+          <span class="bib-venue">J. Opt. Soc. Am. A 18(6), 1399–1405, 2001.</span>
+        </div>
+
+        <!-- ✏️  Add more entries here, or generate them from your .bib file -->
+        <div class="paste-hint" style="margin-top:2rem;">
+          <p class="hint-title">✏️  Add .bib entries here</p>
+          <p>Copy additional entries from your <code>.bib</code> file and paste them as
+             <code>&lt;div class="bib-entry"&gt;</code> blocks above,<br>
+             or replace the entire section with an auto-generated list from a script.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════ JS -->
+<script>
+  // ── Tab switching ─────────────────────────────────
+  function switchTab(targetId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.target === targetId);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === targetId);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.target));
+  });
+
+  // ── Hash-based deep linking ───────────────────────
+  const hashMap = {
+    '#gsm':   'panel-gsm',
+    '#micro': 'panel-micro',
+    '#math':  'panel-math',
+    '#refs':  'panel-refs',
+  };
+
+  if (location.hash && hashMap[location.hash]) {
+    switchTab(hashMap[location.hash]);
+  }
+</script>
+
+</body>
+</html>
