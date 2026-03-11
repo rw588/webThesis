@@ -617,9 +617,826 @@
 
       <div class="paste-hint">
         <p class="hint-title">✏️  Paste your .tex content here</p>
-        <p>Open <code>index.html</code> and replace this block with your LaTeX sections.<br>
-           All equations are rendered via MathJax 3 — use standard <code>$$...$$</code> or
-           <code>\[...\]</code> display math and <code>$...$</code> inline math.</p>
+        <p>Open <code>index.html</code> %!TEX root = ../thesis.tex
+%*******************************************************************************
+%****************************** Third Chapter **********************************
+%*******************************************************************************
+\chapter{Interferometer Theory}
+
+% **************************** Define Graphics Path **************************
+\ifpdf
+    \graphicspath{{ChapterInt_theory/Figs/Raster/}{ChapterInt_theory/Figs/PDF/}{ChapterInt_theory/Figs/}}
+\else
+    \graphicspath{{ChapterInt_theory/Figs/Vector/}{ChapterInt_theory/Figs/}}
+\fi
+
+\section{papers}
+https://doi.org/10.1016/0030-4018(78)90205-5 \\
+
+
+\section{Outline}
+Interferometers are instruments that encode physical information into the relative phase of wavefronts. In general interferometers coherently split a single wave into two or more paths, a perturbation is carried out on one or more of the wavelets, then upon recombination the result of the action on the optical path can be measured. A perturbation can be in many forms, but in general is anything that alters the optical length of a waves path - e.g. change in length of the path, or refractive index.
+Many metrological results can be encoded into the phase of these wavelets: optical density of a material, relativistic shift of a path length, and of course the gravitational field. Our theoretical consideration of interferometers should start with the underlying principle the superposition of wavefronts \cite{intro_lab_optics}. This has routes in classical wave theory the first realistic conceptualisation of wavefront propagation was made by Christiaan Huygens in 1678. Fresnel later improved on Huygens' wavefront construction by considering interference and first explained diffraction effects with the Huygens-Fresnel principle. Kirchhoff then developed the Kirchhoff integral theorem, which is a more mathematically rigorous formulation of wave propagation and diffraction for scalar fields.
+
+\subsection{Huygens wavelets}
+Huygens principle considered in the \emph{Treatise on Light} `the origin of these waves, and the manner in which they spread'. He argues that `each little region of a luminous body $\ldots$ generates its own waves of which that region is the centre'. He goes onto say that `Similarly the other particles of the sphere $\ldots$ will each make its own wave. But each of these waves can be infinitely feeble' \cite{huygens1912treatise}.\\
+
+\begin{figure}
+    \centering    \includegraphics[width=0.35\linewidth]{Version_2022//ChapterInt_theory/Huygens.png}
+    \label{fig:huygens}
+    \caption{}
+\end{figure}
+
+In a more modern take: Every point on a wavefront, can be considered a source of secondary wavelets.\\
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\linewidth]{ChapterInt_theory/huygens.png}
+	\caption{}
+	\label{fig:placeholder}
+\end{figure}
+
+Consider an electric field strength, $E$:\\
+\begin{equation}
+	E(x, y, z=0) = A(x, y)
+\end{equation}
+If we get the boundary conditions at infinity then the solution must be harmonic and it can immediately be written that
+\begin{equation}
+	E(x, y, 0) = A(x,y) = E_0  e^{i(k_x x + k_y y)}
+\end{equation}
+where $\sum_{i} k_i^2 = \frac{n^2\omega^2}{c^2}$
+
+The wave equation is linear; hence we can integrate over the contributions from different wavelengths to obtain:\\
+\begin{equation}
+    A(x, y) = \frac{1}{(2\pi)^2} \iint A(k_x,k_y)\mathcal{H}(k_x,k_y) e^{i(k_xx+k_yy)}dk_xdk_y
+\end{equation}
+where $\mathcal{H}(k_x,k_y) = e^{iz\sqrt{k^2-k_x^2-k_y^2}}$
+
+\begin{equation}
+U(r_0) \propto \frac{U_0 e^{ikr_0}}{r_0}
+\end{equation}
+
+\begin{equation}
+\text{at P: } U(P) = -\frac{i}{d} U(r_0) \int_S \frac{e^{iks}}{s}\kappa(\chi) dS
+\label{eqn:huygenseqn}
+\end{equation}
+where $\kappa(\chi) = \frac{1}{2}(1 + \cos\chi)$. This is an inclination factor not originally considered by Huygens. Its action is to reduce the contribution from highly inclined wavelets, and to prevent the back transmission of forwardly propagating waves. A more mathematically complete picture was later developed by Kirchhoff.\\
+
+\subsection{Kirchhoff's integral theorem}
+Kirchhoff's integral theorem provides a formal solution using Green's functions. We begin with the Helmholtz wave equation:\\
+\begin{equation}
+    \nabla^2U + k^2U = 0
+    \label{eqn:helmholtzWave}
+\end{equation}
+
+We then introduce a Green's function $G$ satisfying:
+\begin{equation}
+    \nabla^2 G + k^2 G = -\delta(\mathbf{r} - \mathbf{r}')\end{equation}
+whose solution is the outgoing spherical wave:
+\begin{equation}
+    G(\mathbf{r}, \mathbf{r}') = \frac{e^{ik|\mathbf{r}-\mathbf{r}'|}}{4\pi|\mathbf{r}-\mathbf{r}'|}
+\label{eqn:greensFunc}
+\end{equation}
+Applying Green's second identity:
+\begin{equation}
+        \int_V \left( U\nabla^2 G - G\nabla^2 U \right) dV = \oint_S \left( U\frac{\partial G}{\partial n} - G\frac{\partial U}{\partial n} \right) dS
+\end{equation}
+and substituting the governing equations for $U$ and $G$, the left-hand side becomes:
+\begin{equation}
+    \int_V \left( -U\delta(\mathbf{r}-\mathbf{r}') + Gk^2U - Uk^2G \right) dV = -U(\mathbf{r}')
+\end{equation}
+where the $k^2$ terms cancel and the sifting property of the delta function yields $U(\mathbf{r}')$. Substituting the explicit form of $G$ with $s = |\mathbf{r} - \mathbf{r}'|$, we arrive at Kirchhoff's integral theorem:
+\begin{equation}
+    U(\mathbf{r}') = \frac{1}{4\pi} \oint_S \left[ U \frac{\partial}{\partial n}\left(\frac{e^{iks}}{s}\right) - \frac{e^{iks}}{s}\frac{\partial U}{\partial n} \right] dS
+    \label{eqn:KirchhoffIntegral}
+\end{equation}
+
+This is the final form of the Kirchhoff Integral theorem, with the kernel  however we can recover the usual Huygens form when we consider an incident spherical wave: $U = U(\mathbf{r})=U_0\frac{e^{ikr}}{r}$, with its normal derivative: $\frac{\partial U}{\partial n} = U_0 \frac{\partial}{\partial n} \big( \frac{e^{ikr}}{r} \big) \approx ik U_0 \cos \chi \frac{e^{ikr}}{r}$
+
+substituting these terms in gives:
+\begin{equation}
+    U(\mathbf{r}') = \frac{1}{4\pi} \oint_S \left[ U_0 \frac{e^{ikr}}{r} ik \cos \chi_s \frac{e^{iks}}{s} - \frac{e^{iks}}{s} ik U_0 \cos \chi_i \frac{e^{ikr}}{r} \right] dS
+\end{equation}
+
+\begin{equation}
+    U(\mathbf{r}') =
+    \frac{ik}{4\pi} U_0 \oint_S \frac{e^{ik(r+s)}}{rs} \big( \cos \chi_s - \cos \chi_i \big) dS
+\end{equation}
+
+using the paraxial approximation to remove the $\cos \chi_s$ dependence and the original Huygens equation (\ref{eqn:huygenseqn}) is recovered.
+
+\begin{equation}
+\text{at P: } 
+U(P) = -\frac{i}{d} U(r_0) 
+\int_S \frac{e^{iks}}{s}\kappa(\chi)\, dS
+\tag{\ref{eqn:huygenseqn}}
+\end{equation}
+
+With the Green's function forward propagation appears naturally, the sum of waves at a location is amplitude weighted, boundary conditions can be easily built in, and the derivative of the field naturally yields the inclination factor $\kappa(\chi) = \frac{1}{2} (1 + \cos \chi)$, which accounts for the obliquity of the wavefront and suppresses unphysical back-propagation.\\
+
+What can be seen in Kirchhoff's integral theorem in equation \ref{eqn:KirchhoffIntegral} is that each surface element $dS$ contributes a $\frac{e^{iks}}{s}$, a new spherical wave. There is a factor $-\frac{i}{d}$ that represents a phase delay of 90° ($-i = e^{i\frac{\pi}{2}}$), that gives the new wave the correct phase. 
+
+
+\subsection{Talbot Imaging}
+
+The Talbot effect follows directly from the propagation of a periodic field, with the Helmholtz equation (\ref{eqn:helmholtzWave}).\\
+\begin{equation}
+    \nabla^2U + k^2U = 0
+    \tag{\ref{eqn:helmholtzWave}}
+\end{equation}
+A transmission mask with period $d$ along $y$ decomposes the incident field into the
+spatial harmonics of the mask:
+%
+\begin{equation}
+    A(y, 0^+) = T(y) = \sum_n c_n\, e^{i 2\pi ny/d}.
+    \label{eqn:grating}
+\end{equation}
+%
+Each harmonic, $e^{ik_y^{(n)} y}$, with $k_y^{(n)} = 2\pi n/d$, is a solution of the Helmholtz equation (\ref{eqn:helmholtzWave}) so long as:
+\begin{equation}
+    k_z^{(n)} = \sqrt{k^2 - \left( \tfrac{2\pi n}{d} \right) ^2}
+\end{equation}
+%
+The propagator for each harmonic in the $\vec{z}$ direction is: $e^{ik_z^{(n)} z}$
+%
+which leads to the entire field becoming:
+\begin{equation}
+    A(y, z) = \sum_n c_n e^{i 2\pi ny/d} e^{iz\sqrt{k^2-(2\pi n/d)^2}}
+\end{equation}
+%
+The propagator can be Taylor expanded given that $\frac{2\pi n}{d} \ll k$, i.e. $d \ll d$:\\
+\begin{equation}
+    k_z^{(n)} = k\sqrt{1 - \frac{n^2d^2}{d^2}} 
+    \approx k - \frac{\pi n^2 d}{d^2},
+\end{equation}
+and
+\begin{equation}
+    A(y, z) = \sum_n c_n e^{i 2\pi ny/d} e^{ikz} e^{-iz \left( \frac{\pi n^2 d}{d^2}\right)}
+    \label{eqn:talbotGeneral}
+\end{equation}
+%
+These parts of the field can now be broken down qualitatively. The term $e^{ikz}$ is the light field that varies along the propagation direction with wavelength $d$, it is quickly varying and does not affect the measurable: intensity. The remainder is the intensity pattern with $\vec{z}$. Whenever the term $e^{-iz \left( \frac{\pi n^2 d}{d^2}\right)} = 1$ the transmission mask $T(y)$ is reproduced. This re-imaging occurs whenever $z\pi n^2 \frac{d}{d^2}$ is an integer multiple of $2\pi$. $n=1$ sets the strictest condition, given $n \in \mathbb{Z}^+$, the first re-imaging occurs at the Talbot length $T_L$ when:
+\begin{equation}
+    z = \frac{2d^2}{d} \equiv T_L
+\end{equation}
+
+It can also be seen that at intermediate positions, harmonics with higher $n$ 
+may satisfy the condition while lower $n$ do not, producing partial or fractional 
+self-images of the mask.\cite{Mansuripur_2009}\\
+
+\subsection{Gaussian-Schell model approximation}
+\cite{Cai2017}
+\cite{Friberg1982}
+\cite{MandelWolf95}
+{\color{red}Schell model source is where the coherence function depends only on $r_2 - r_1$.}
+In order to move towards incoherent optics, we must introduce the mutual coherence function, and cross spectral density function. For a partially coherent field $\langle U \rangle = 0$. The spectral density is an interesting function to us, because contained within it, is the intensity of the source, and the spatial/ transverse coherence. The mutual coherence function, also contains temporal coherence.\\
+We start by evaluating the electric field intensity at two points $\mathbf{r_1}$ and $\mathbf{r_2}$, the cross spectral density, $W$ is then defined as:\\
+\begin{equation}
+    W(\mathbf{r_1}, \mathbf{r_2}) = \langle U^*(\mathbf{r_1}) U(\mathbf{r_2}) \rangle
+\end{equation}
+Where the mutual coherence function $\Gamma$ is given by:\\
+\begin{equation}
+ \Gamma(\mathbf{r_1},\mathbf{r_2},\tau) = \langle U^* (\mathbf{r_1},t)U(\mathbf{r_2},t+\tau) \rangle
+    \label{eqn:mutualCoherence}
+\end{equation}
+
+To propagate this we can use the Huygens form of the Kirchhoff integral found in equation \ref{eqn:huygenseqn}:
+\begin{equation}
+    U(\mathbf{r'}) = \int_S K(\mathbf{r}, \mathbf{r'})U(\mathbf{r})dS
+    \label{eqn:huygenseqn2}
+\end{equation}
+%
+Where the kernel is: $K(\mathbf{r}, \mathbf{r'}) = -\frac{i}{d} \frac{e^{iks}}{s} \kappa (\chi)$
+%
+The cross-spectral density is now given by:\\
+\begin{equation}
+    W(\mathbf{r_1'},\mathbf{r_2'}) = \iint_S K^*(\mathbf{r_1},\mathbf{r_1'})K(\mathbf{r_2},\mathbf{r_2'})W(\mathbf{r_1},\mathbf{r_2}) dS_1 dS_2
+    \label{eqn:crossSpectral}
+\end{equation}
+%
+Real sources, like thermal sources, and lasers, have intensity and coherence profiles that can be well or exactly described by Gaussians. Gaussians are also convenient in offering an analytical solution to the propagation integral. Introducing the Gaussian nature of the intensity profile and coherence function:\\
+\begin{equation}
+    I(\mathbf{r}) = I_0 e^{-\frac{r^2}{2\sigma_I^2}}, \Gamma(\mathbf{r_1}- \mathbf{r_2}) = e^{-\frac{|\mathbf{r_1}-\mathbf{r_2}|^2}{2\sigma_\Gamma^2}}
+    \label{eqn:gaussianschellmodelsource}
+\end{equation}
+Where $\sigma_I$ and $\sigma_\Gamma$ are generally different widths of the intensity and coherence functions. Sometimes these widths are linked by the `degree of global coherence' $\beta = \frac{\sigma_\Gamma}{\sigma_I}$, which can take values from $0$ for completely incoherent, to $\infty$ for coherent beams.\\ 
+% define Gaussian source
+A Gaussian Schell-model source takes the form:\\
+\begin{equation}
+    U(\mathbf{r}) = U_0 \exp(-\frac{r^2}{4\sigma_I^2}) e^{i\phi(\mathbf{r})}
+    \label{eqn:gaussianSource}
+\end{equation}
+Where $\phi(\mathbf{r})$ is a random phase, which makes $\langle U \rangle = 0$. For incoherent optics it is therefore the second order quantity, the cross-spectral density, which is generally non-zero that is interesting.\\
+Using the Gaussian beam from equation \ref{eqn:gaussianSource} into the cross-spectral density in equation \ref{eqn:crossSpectral} yields:\\
+\begin{equation}
+    W(\mathbf{r_1},\mathbf{r_2}) = \langle U^*(\mathbf{r_1}) U(\mathbf{r_2}) \rangle = \sqrt{I(\mathbf{r_1}) I(\mathbf{r_2})} \Gamma (\mathbf{r_1},\mathbf{r_2},0)
+\end{equation}
+
+
+\begin{equation}
+    W(\mathbf{r_1}, \mathbf{r_2}) = \sqrt{I(\mathbf{r_1}) I(\mathbf{r_2})} \Gamma(\mathbf{r_1}- \mathbf{r_2})
+    \label{eqn:gaussianSchellcpd}
+\end{equation}
+
+\subsection{van Cittert-Zernike theorem}
+Lets take the limits of the cross-spectral density in equation \ref{eqn:gaussianSchellcpd}. For a completely incoherent source, where $\sigma_\Gamma \rightarrow 0$ then $    W(\mathbf{r_1}, \mathbf{r_2}) = I(\mathbf{r_1}) \delta(\mathbf{r_1} - \mathbf{r_2})$. In this situation no two point, have a related phase of the light field.\\
+
+Starting from \ref{eqn:crossSpectral}:
+\begin{equation}
+    W(\mathbf{r_1'},\mathbf{r_2'}) = \iint_S K^*(\mathbf{r_1},\mathbf{r_1'})K(\mathbf{r_2},\mathbf{r_2'})W(\mathbf{r_1},\mathbf{r_2}) dS_1 dS_2
+    \tag{\ref{eqn:crossSpectral}}
+\end{equation}
+
+\begin{equation}
+    W(\mathbf{r_1'},\mathbf{r_2'}) = \int_S I(\mathbf{r}) K^*(\mathbf{r},\mathbf{r_1'})K(\mathbf{r},\mathbf{r_2'}) d^2\mathbf{r}
+    \label{eqn:crossSpecIncoh}
+\end{equation}
+
+It is valid to assume the paraxial approximation because the source size is very small compared to the distance to the detector so the condition $|\mathbf{r_1}-\mathbf{r_2}| \ll z$. Now the paraxial kernel can be derived from the Huygens kernel. Starting with equation \ref{eqn:huygenseqn2}:
+
+\begin{equation}
+    U(\mathbf{r'}) = \int_S K(\mathbf{r}, \mathbf{r'})U(\mathbf{r})dS
+    \tag{\ref{eqn:huygenseqn2}}
+\end{equation}
+%
+https://dielslab.unm.edu/sites/default/files/paraxial-huygens-fresnel2.pdf\\
+
+Where the kernel is: $K(\mathbf{r}, \mathbf{r'}) = -\frac{i}{d} \frac{e^{iks}}{s}\kappa (\chi)$. From the paraxial angles,
+$\kappa$ can immediately be set to 1, additionally the kernel can be expanded in $s$. For a source at $\mathbf{r} = (\mathbf{\rho},0)$ and observer at $\mathbf{r'} = (\mathbf{\rho'},z)$:
+\begin{equation}
+    s = |\mathbf{r'}-\mathbf{r}| = \sqrt{z^2 + |\mathbf{\rho'} - \mathbf{\rho}|^2} = z \sqrt{1 + \frac{|\mathbf{\rho'} - \mathbf{\rho}|^2}{z^2}}
+\end{equation}
+To second order the kernel becomes:
+\begin{equation}
+    K(\mathbf{r}, \mathbf{r'}) = -\frac{i}{d} \frac{e^{iks}}{s} \approx -\frac{i}{d} \frac{1}{z} \exp \left( ikz + \frac{ik|\mathbf{\rho'} - \mathbf{\rho}|^2}{2z} 
+    %quartic term
+    - \frac{ik|\mathbf{\rho'} - \mathbf{\rho}|^4}{8z^3}
+    \right)
+    \label{eqn:fresnelKernel1}
+\end{equation}
+And cleaning up
+\begin{equation}
+    K(\mathbf{\rho}, \mathbf{\rho'}) = -\frac{i}{d z} e^{ikz} \exp \left( \frac{ik|\mathbf{\rho'} - \mathbf{\rho}|^2}{2z} \right)
+    \label{eqn:fresnelKernel2}
+\end{equation}
+The conditions for this are:\\
+\begin{enumerate}
+    \item $d \ll s$
+    \item $\kappa (\chi) \approx 1$
+    \item $\frac{1}{s} \approx \frac{1}{z}$
+    \item The quartic term in the expansion must be allowed to be dropped, i.e. $\frac{ka^4}{8z^3} \ll 1$. This is the the Fresnel condition, it demands the paraxial approximation $\frac{a}{z} \ll 1$, and that the Fresnel number, $F = \frac{a^2}{d z} \ll 1$.
+\end{enumerate}
+Condition 2 \& 3 are both true in the paraxial approximation, demanded by condition 4.
+
+Going back to equation \ref{eqn:crossSpecIncoh}, now the Fresnel kernel can be substituted into the integral. Starting with the product:\\
+\begin{equation}
+    K^*(\boldsymbol{\rho_1},\boldsymbol{\rho_1'})K(\boldsymbol{\rho_2},\boldsymbol{\rho_2'}) 
+    = \frac{1}{(d z)^2} 
+    \exp \left( -\frac{ik}{2z}|\boldsymbol{\rho_1'} - \boldsymbol{\rho}| \right)
+    \exp \left( \frac{ik}{2z}|\boldsymbol{\rho_2'} - \boldsymbol{\rho}| \right)
+\end{equation}
+Expanding the powers:\\
+$$|\mathbf{\rho_2'} - \mathbf{\rho}|^2 = \mathbf{\rho_2'}^2 - 2\mathbf{\rho_2'}\mathbf{\rho}+\mathbf{\rho}^2$$\\
+$$\implies |\mathbf{\rho_2'} - \mathbf{\rho}|^2 - |\mathbf{\rho_1'} - \mathbf{\rho}|^2 = \mathbf{\rho_2'}^2 - \mathbf{\rho_1'}^2 - 2\mathbf{\rho_2'}\mathbf{\rho} + 2\mathbf{\rho_1'}\mathbf{\rho}$$\\
+
+Finally the cross-spectral density is given by:
+\begin{equation}
+    W(\mathbf{\rho_1'},\mathbf{\rho_2'}) =
+    \frac{1}{(d z)^2} 
+    \exp \left( \frac{ik}{2z} (\mathbf{\rho_2'}^2 - \mathbf{\rho_1'}^2) \right)
+    \int_\Sigma I(\mathbf{\rho}) 
+    \exp \left(
+    -\frac{ik}{z} (\mathbf{\rho_2'} - \mathbf{\rho_1'})\cdot \rho
+    \right)
+    d^2\mathbf{\rho}
+    \label{eqn:vanCitterZernikeFull}
+\end{equation}
+Which can be recognised as a fourier transform. Finally expressing the formulation in the usual form. The van Cittert-Zernike theorem states that the mutual coherence of a source is proportional to the angular fourier transform of the source:\\
+\begin{equation}
+    W(\mathbf{\rho_1'},\mathbf{\rho_2'}) \propto 
+    \mathcal{F}\left\{I \left( \frac{\rho_2' - \rho_1'}{d z} \right) \right\}
+\end{equation}
+
+In terms of a Gaussian source $I(\rho) = I_0 e^{-\rho^2/2\sigma_I^2}$ this becomes:\\
+\begin{equation}
+    \mathcal{F}\left\{I \left( f \right) \right\} = 2\pi \sigma_I^2 I_0 e^{-2\pi^2 \sigma_I^2 |f|^2}
+\end{equation}
+
+\section{3 grating interferometers}
+\subsection{Moire deflectometer}
+In a moiré deflectometer the two gratings are separated by a distance 
+$d \ll T_L$, so diffraction between them is negligible and the instrument operates in the geometric-optics regime. Here the light acts as rays. Qualitatively the first grating acts to produced periodic sources, and the second constrains the trajectories from these sources. A geometric pattern then appears after this second grating. We can start building the picture of the system by considering a source with angular distribution: $A(\theta)$. After the action of the same grating considered for the Talbot-Lau interferometer (\ref{eqn:grating}).\\
+\begin{equation}
+    T(y) = \sum_n c_n\, e^{i 2\pi ny/d}.
+    \tag{\ref{eqn:grating}}
+\end{equation}
+The intensity distribution is as follows:\\
+\begin{equation}
+    I_1(y,\theta) = T(y) A(\theta)
+\end{equation}
+At the position of the second grating a distance $L$ from the first, the $y$ positions have shifted to $y_2 = y_1 + L\tan\theta$ we must perform a transformation to rest $y$ positions so that the intensity is after a second grating is given by:\\
+\begin{equation}
+    I_2(y,\theta) = T(y) T(y - L\tan\theta) A(\theta)
+\end{equation}
+Doing the same transformation in $y$ and we get:\\
+\begin{equation}
+    I_3(y,\theta) = T(y - L\tan\theta) T(y - 2L\tan\theta) A(\theta)
+\end{equation}
+The observed intensity can be found by integrating over $\theta$ and summing over the Fourier components from equation \ref{eqn:grating}:
+\begin{equation}
+    I(y) = \int d\theta \sum_{n, m} c_n c_m e^{i2\pi \frac{y}{d}(n + m)} e^{-i2\pi \frac{L\tan\theta}{d}(n + 2m)}
+\end{equation}
+For small angles we can approximate that $\tan \theta \approx \theta$. If we also make a large assumption that the angular distribution is flat i.e. $A(\theta) = A$:, and runs from $-\frac{\pi}{2}$ to $\frac{\pi}{2}$ then the intensity distribution reduces to:\\ 
+\begin{equation}
+    I(y) \propto \sum_{n, m} c_n c_m e^{i2\pi \frac{y}{d}(n + m)} \int_{-\frac{\pi}{2}}^{\frac{\pi}{2}} d\theta  e^{-i2\pi \frac{L\theta}{d}(n + 2m)}
+\end{equation}
+The integrand looks like: $\int_{-\frac{\pi}{2}}^{\frac{\pi}{2}} d\theta  e^{-iq\theta} = \theta \cdot \text{sinc} \left( \frac{q\theta}{2}\right)$, and hence:
+\begin{equation}
+    I(y) \propto \sum_{n, m} c_n c_m e^{i2\pi \frac{y}{d}(n + m)}
+    \pi \cdot \text{sinc}\left(\pi^2 \frac{L}{d} (n+2m) \right)
+\end{equation}
+For $d \ll L$ the sinc kills all terms except $n = -2m$:
+\begin{equation}
+    I(y) = \pi \sum_m c_m c_{-2m} e^{-i \frac{2\pi y}{d} m}
+\end{equation}
+Considering the pattern's lowest order fourier contribution the amplitude of the pattern, $A$, is:
+\begin{equation}
+    A = |c_1 \cdot c_{-2}|
+    \label{eqn:deflectVisi}
+\end{equation}
+From \cite{Krumm1991} it can be shown that the fourier components for a grating with open fraction $\zeta$ are:\\
+\begin{equation}
+    c_n = \zeta \text{sinc} \left(\pi n \zeta \right)
+    \label{eqn:openfraccoeff}
+\end{equation}
+Hence the amplitude is given by:\\
+\begin{equation}
+    A
+    (\zeta) = |\zeta^2\text{sinc}\left( \pi \zeta \right) \text{sinc}\left(2\pi \zeta \right)|
+\end{equation}
+The transmission rate is more simple at $T = \zeta^3$. Finally the contrast $C$ can be calculated.\\
+For $A>T$, $C=1$\\
+Otherwise 
+\begin{equation}
+    C = \frac{A}{T} = |\frac{1}{\zeta}\text{sinc}\left( \pi \zeta \right) \text{sinc}\left(2\pi \zeta \right)|
+\end{equation}
+The plot of this result can also be found in Oberhalter 96 \cite{Oberthaler1996}.
+
+\begin{figure}
+    \centering
+\includegraphics[width=0.9\linewidth]{Version_2022//ChapterInt_theory/deflectometer.png}    \label{fig:deflectometer}
+\caption{}
+\end{figure}
+
+
+
+\subsection{Contrast of a Talbot pattern}
+This same game, with the Fourier coefficients, can be played with a Talbot interferometer as we just did with a Moiré deflectometer. Before we considered a Fourier grating in equation \ref{eqn:grating}.
+\begin{equation}
+    T(y) = \sum_n c_n\, e^{i 2\pi ny/d}
+    \tag{\ref{eqn:grating}}
+\end{equation}
+If we assume binary gratings, made of a material that either lets through the wavefronts or not, with an open fraction $\zeta$ then from equation \ref{eqn:openfraccoeff}:
+\begin{equation}
+    c_n = \zeta \text{sinc} \left(\pi n \zeta \right)
+    \tag{\ref{eqn:openfraccoeff}}
+\end{equation}
+
+\begin{equation}
+    A(y, z) = \sum_n c_n e^{i 2\pi ny/d} e^{ikz} e^{-iz \left( \frac{\pi n^2 d}{d^2}\right)}
+    \tag{\ref{eqn:talbotGeneral}}
+\end{equation}
+Naïvely the contrast appears that it would be that of the grating when the Talbot condition is met and the light field exactly reproduces the grating. When the mutually incoherent sources that make up the finite sized hole in a single $G_0$ slit are summed they wash out the pattern. For a point source at height $y_s$ the light field becomes:
+\begin{equation}
+    A_{y_s}(y) = \sum_n c_n e^{i2\pi n (y - y_s)/d} = T(y-y_s)
+\end{equation}
+\begin{equation}
+    A(y) = \frac{1}{d}\int_0^{d\zeta} dy_s\sum_n c_n e^{i2\pi n (y - y_s)/d} = \frac{1}{d}\int_0^{d\zeta} dy_s \cdot T(y-y_s)
+\end{equation}
+\begin{equation}
+    A(y) = \frac{1}{d}\sum_n c_n e^{i2\pi ny/d}\int_0^{d\zeta} e^{-i2\pi n y_s/d} dy_s
+\end{equation}
+Finally
+\begin{equation}
+    A(y) = \sum_n c_n e^{i2\pi ny/d} \zeta e^{-i\pi n \zeta} \text{sinc}(\pi n \zeta) = 
+    \sum_n e^{i2\pi ny/d} \zeta^2 e^{-i\pi n \zeta} \text{sinc}(\pi n \zeta)^2
+    \label{eqn:talbotPattern}
+\end{equation}
+The amplitude of the Talbot signal with periodicity $d$ from the grating is: $\zeta \cdot \text{sinc} \left(\pi \zeta \right)$, but now of the Talbot pattern is:\\
+\begin{equation}
+    |c_1| = \zeta^2 \text{sinc}(\pi\zeta)^2
+\end{equation}
+The transmission is after two gratings is now: $|c_0| = \zeta^2$. Hence the first order contrast given by: $C = \frac{|c_1|}{c_0}$ is:\\
+\begin{equation}
+    C = \frac{|c_1|}{c_0} = \text{sinc}(\pi\zeta)^2
+\end{equation}
+The phase sensitivity: $\delta \phi = \frac{1}{C\sqrt{N}}$, so our phase sensitivity is maximised when $C \zeta$ is maximised. This occurs at $\zeta = 0.371$.
+
+
+\subsection{3 grating Talbot-Lau}
+
+Using the pattern from equation \ref{eqn:talbotPattern} to first order the pattern just before the third, measurement, grating is given by:\\
+\begin{equation}
+    I_3(y) = \zeta^2 \left\{ 1 + \text{sinc}(\pi \zeta)^2 \cos \left(\frac{2\pi}{d}y\right)\right\}
+\end{equation}
+The fourier expansion, also to first order for the third grating comes from equation \ref{eqn:grating}:
+\begin{equation}
+    T(y) = \zeta \left\{ 1 + \text{sinc}\left( \pi \zeta \right) e^{i \frac{2\pi n}{d}y} \right\}
+\end{equation}
+The measured intensity as a function of the displacement of the third grating is given by the integral:\\
+\begin{equation}
+    I(\Delta) = \int_{-\infty}^\infty I_3(y) T(y - \Delta) dy
+\end{equation}
+It can immediately be read off that the d.c. component of the measured signal, $I_0 = \zeta^3$, and the first order component:\\
+\begin{equation}
+    I_1 = \zeta^3 \text{sinc}\left( \pi \zeta \right)^3
+\end{equation}
+and hence the contrast can be calculated to be:\\
+\begin{equation}
+    C = \frac{|I_1|}{I_0} = \text{sinc}\left( \pi \zeta \right)^3
+\end{equation}
+The optimiser for the largest phase sensitivity given by $C\sqrt{N}$ is then:\\
+\begin{equation}
+    \zeta^\frac{3}{2} \text{sinc} \left( \pi\zeta \right)^3
+\end{equation}
+These functions of open fraction are plotted in figure \ref{fig:TalbotLauContrast}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\linewidth]{Version_2022//ChapterInt_theory/talbotLauConstrast.png}
+    \caption{Contrast, Transmission and open fraction optimiser for a Talbot-Lau interferometer with a third measurement grating}
+    \label{fig:TalbotLauContrast}
+\end{figure}
+
+%%%%%%%
+\section{Single slit source}
+We have now considered the incoherent sum of trajectories, and the coherent sum from 2 gratings.
+For a source that is incoherent
+
+
+
+%%%%%%% 
+
+\section{Fabry - Perot}
+
+\section{Gratings}
+\subsection{Light}
+Kapitza-Dirac-Talbot-Lau interferometry (Arndt) and then Ted Hansch with hydrogen. \cite{Hornberger2009}
+
+\subsection{Lithography}
+
+Include McMorran, Konstantins. Si, Si3N4
+
+\section{Asymmetric Talbot Lau?}
+
+\section{Periodic source interferometry}
+Refer to american company that has the periodic TL source. {\color{red} source}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{Version_2022//ChapterInt_theory/geometricTL.png}
+    \caption{Geometry of diffraction lines giving a matched path length condition}
+    \label{fig:geometricTL}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\linewidth]{Version_2022//ChapterInt_theory//diagrams/hyperbola.pdf}
+    \caption{Lau condition}
+    \label{fig:hyperbolaLau}
+\end{figure}
+
+For a periodic, but incoherent source, giving a diffraction pattern after a single grating we have to make several assumptions.
+For the developed microfluidic source we have to be able to assume that the source behaves as a Gaussian-Schell model beam. The source can then be defined as before in equation \ref{eqn:gaussianschellmodelsource} as:
+\begin{equation}
+    W(\mathbf{r_1}, \mathbf{r_2}) = \sqrt{I(\mathbf{r_1}) I(\mathbf{r_2})} \Gamma(\mathbf{r_1}- \mathbf{r_2})
+    \tag{\ref{eqn:gaussianSchellcpd}}
+\end{equation}
+where:
+\begin{equation}
+    I(\mathbf{r}) = I_0 e^{-\frac{r^2}{2\sigma_I^2}}, \Gamma(\mathbf{r_1}- \mathbf{r_2}) = e^{-\frac{|\mathbf{r_1}-\mathbf{r_2}|^2}{2\sigma_\Gamma^2}}
+    \tag{\ref{eqn:gaussianschellmodelsource}}
+\end{equation}
+
+%%%%%%
+
+Defining the source as a single infinitesimal point at position $(x_s, z=0)$ ,  a grating at $z=L = lT_L$, where $l \in \mathbb{Z^+}$, and a screen at $z=2L$. It can be seen that the phase of the two paths, via m and n respectively are equal at a height $x'$ on the screen under the following conditions:
+\begin{equation}
+    \phi_n = \frac{2\pi}{d} \left( \sqrt{L^2 + (nd - x_s)^2} + \sqrt{L^2 +(x')^2} \right)
+\end{equation}
+In the paraxial approximation this becomes:\\
+\begin{equation}
+    \left( \phi_n - \phi_m \right) \cdot \frac{d L}{\pi}= 2\left(x_n - x_m \right) \left[ x_n + x_m - (x_s-x')\right]
+    \label{eqn:phinminusphim}
+\end{equation}
+In fact $x'$ is the intersection of the hyperbola formed with its foci at m \& n and the `screen' placed at $z=2L$. Equation \ref{eqn:phinminusphim} shows that the position $x'$ is given by $n+m$ (ignoring the factor of $d$) and the far field gradient of this hyperbolic locus between the two points is:
+\begin{equation}
+    (n+m) \frac{d}{L}
+\end{equation}
+
+{\color{red} add plot with loci between grating slits in figure \ref{fig:hyperbolaLau}}
+
+For a Gaussian-Schell model beam coming from a point source at $(x_s,z=0)$ the cross spectral density function can be defined as:
+\begin{equation}
+    W(x_{s1}, x_{s2},z=0) = I_0 e^{-\frac{x_{s1}^2 + x_{s2}^2}{4\sigma_I^2}}
+    e^{-\frac{(x_{s1} - x_{s2})^2}{4\sigma_\Gamma^2}}
+\end{equation}
+
+%%%%
+For a spatially incoherent slit of open fraction $f$ and period of a grating $d$ which the slit is an element of the cross-spectral density is:\\
+\begin{equation}
+    W_0(x_{s1}, x_{s2},z=0) = I_0 \cdot \text{rect} \left( \frac{x_{s1}}{fd} \right)\delta(x_{s1} - x_{s2})
+\end{equation}
+
+In a paraxial regime:\\
+\begin{equation}
+    K(x,x') = \sqrt{\frac{k}{2\pi i L}}e^{\frac{ik}{2L}\left( x - x' \right)^2}
+\end{equation}
+\begin{equation}
+    W_1(x_{1}, x_{2},L) = \iint W_0(x_{s1}, x_{s2},0) K^* \left( x_1, x_{s1} \right) K \left( x_2, x_{s2} \right) \, dx_{s1} \, dx_{s2}
+\end{equation}
+From the $\delta$-function in the incoherent CSD: $x_{s1}=x_{s2}=x_s$\\
+\begin{equation}
+    W_1(x_{1}, x_{2},L) = \frac{k}{2\pi i L} e^{\frac{ik}{2L}(x_2^2-x_1^2)}
+    \underbrace{
+\int I_0\,
+e^{ i \frac{k}{L} x_s (x_2-x_1)}\, dx_s
+}_{\mathcal{F}\{I_s\}\!\left(\frac{k}{L}(x_2-x_1)\right)}
+\end{equation}
+Simplifying
+\begin{equation}
+    W_1(x_{1}, x_{2},L) = I_0\frac{kfd}{2\pi i L} e^{\frac{ik}{2L}(x_2^2-x_1^2)}
+    \text{sinc}\left( \pi
+\frac{fd(x_1-x_2)}{\lambda L}\right)
+\end{equation}
+This is a real space representation of the coherence function, $W$. After our usual binary grating defined in equation \ref{eqn:grating} we get in fourier space:\\
+\begin{equation}
+    \Tilde{W}_{1+} (u_1, u_2,z=L) = \sum_{p,q} c_p c_q^* \Tilde{W}_{1-} \left( u_1 - \frac{p}{d}, u_2 + \frac{q}{d} \right)
+\end{equation}    
+Where $\Tilde{W}$ is defined as:
+\begin{equation}
+    \Tilde{W}(u_1, u_2) = \iint W(x_1, x_2) e^{-i2\pi(u_1x_1 + u_2x_2)} dx_1dx_2
+\end{equation}
+Using the substitution $\Bar{x} = \frac{x_1 + x_2}{2}$ and $\Delta = x_1-x_2$:
+\begin{equation}
+    \Tilde{W}_{1-}(u_1,u_2) = \iint e^{i\frac{2\pi}{\lambda L}\Bar{x} \Delta} \text{sinc}\left(\frac{\pi fd\Delta }{\lambda L}\right) e^{2\pi i \left( (u_1 + u_2) \Bar{x} + \frac{u_1 - u_2}{2}\Delta \right)} d\Bar{x} d\Delta
+\end{equation}
+This implies that $\Delta = -\lambda L (u_1 + u_2)$ hence:
+\begin{equation}
+    \Tilde{W}_{1-}(u_1,u_2) = A\lambda L\cdot \text{sinc} \left( \pi f d (u_1 + u_2) \right) e^{\pi i \lambda L (u_1^2 + u_2^2)}
+\end{equation}
+hence after the grating we obtain
+\begin{equation}
+    \Tilde{W}_{1+} (u_1, u_2, L) = \sum_{p,q} c_p c_q^* \cdot A\lambda L\cdot \text{sinc} \left( \pi f d (u_1 + u_2 - \frac{p+q}{d}) \right) e^{\pi i \lambda L ((u_1-\frac{p}{d})^2 - (u_2+\frac{q}{d})^2)}
+\end{equation}
+Fresnel propagation in Fourier space is simply a shear i.e. \cite{https://www.math.purdue.edu/~allen450/fourier-optics/_autosummary/optics.propagators.html}:
+\begin{equation}
+    \Tilde{W_2}(u_1,u_2,2L) = \Tilde{W}_{1+} (u_1, u_2, L) \cdot e^{-i\pi \lambda L (u_1^2 - u_2^2)}
+\end{equation}
+At $z=2L$ there is cancellation of quadratic phases (from the Fresnel propagation), this is equivalent to the matched path length condition stated in equation \ref{eqn:phinminusphim}. This simplification gives:
+\begin{equation}
+    \Tilde{W_2}(u_1,u_2,2L) = \sum_{p,q} c_p c_q^* \cdot A\lambda L\cdot \text{sinc} \left( \pi f d (u_1 + u_2 + \frac{q-p}{d}) \right) e^{\pi i \lambda L \frac{p^2-q^2}{d^2}}
+    e^{-2\pi i \lambda L \frac{pu_1 + qu_2}{d}}
+\end{equation}
+
+
+\newpage
+If we consider a Gaussian-Schell model beam starting at $z=0$ with a cross spectral density given by:\\
+\begin{equation}
+    W_0(x_{s1}, x_{s2},z=0) = I_0 e^{-\frac{x_{s1}^2 + x_{s2}^2}{4\sigma_I^2}}
+    e^{-\frac{(x_{s1} - x_{s2})^2}{2\sigma_c(L)^2}}
+\end{equation}
+If this beam freely propagates to a position $z=L$ then the CSD becomes:\\
+\begin{equation}
+    W_{0}(x_{s1}, x_{s2},z=L) = I_L e^{-\frac{x_{s1}^2 + x_{s2}^2}{4\sigma_I^2(L)}}
+    e^{-\frac{(x_{s1} - x_{s2})^2}{2\sigma^2_c(L)}}
+    e^{i\frac{k}{2R(L)}(x_{s1}^2 - x_{s2}^2)}
+    \label{eqn:propagatedCSD}
+\end{equation}
+%{\color{red} is there a more simple propagation?}
+where both $\sigma$ types transform as: $\sigma^2(z) = \sigma_0^2 \left(1 + \xi^2(z)\right)$, the radius of curvature transforms as: $R(z) = z \left( 1 + \frac{1}{\xi^2(z)} \right)$, $I_L = \frac{I_0}{\sqrt{1+\xi^2}} $where $\xi(z) = \frac{\lambda z}{\pi w_0 l_c}$.{\color{red} figure out $\xi$ should be $w_0^2$} \\
+Via the usual binary transmission grating defined as:
+\begin{equation}
+    t(x) = \sum_{n=-\infty}^\infty \text{rect} \left( \frac{x - nd}{fd} \right) = \sum_{m=-\infty}^\infty a_m e^{i 2\pi mx/d}
+\end{equation}
+Where $a_m = f \text{sinc} (\pi mf)$.\\
+We can now propagate the CSD through the grating at $L$ giving:\\
+\begin{equation}
+    W_{1+}(x_{s1}, x_{s2},z=L) = \sum_{m,n} a_m a_n e^{i \frac{2\pi}{d} (mx_{s1}-nx_{s2})} W_{1-}(x_{s1}, x_{s2},z=L)
+\end{equation}
+Propagating again is simply a quadratic shift in fourier space.
+In a paraxial regime we can use the Fresnel kernel given by:\\
+\begin{equation}
+    K(x,x') = \sqrt{\frac{k}{2\pi i L}}e^{\frac{ik}{2L}\left( x - x' \right)^2}
+\end{equation}
+\begin{equation}
+    W_1(x_{1}, x_{2},L) = \iint W_0(x_{s1}, x_{s2},0) K^* \left( x_1, x_{s1} \right) K \left( x_2, x_{s2} \right) \, dx_{s1} \, dx_{s2}
+\end{equation}
+Qualitatively, we build up the CSD at $(x_1, x_2)$ by integrating over all of the source points to each of $(x_1, x_2)$ propagated by the Fresnel propagator.\\
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\linewidth]{Version_2022//ChapterInt_theory//diagrams/fresnelIntegral.pdf}
+    \caption{{\color{red} d vs df}Qualitative diagram of the propagation from the single slit, modelled as a Gaussian beam}
+    \label{fig:fresnelIntegralDiag}
+\end{figure}
+In our case this integral looks like:\\
+\begin{equation}
+    W_1(x_{1}, x_{2},2L) = \iint t(\xi_1) t(\xi_2) W_0(\xi_{1}, \xi_{2},L) e^{\frac{ik}{2L} \left( (x_1 - \xi_1)^2 - (x_2 - \xi_2)^2 \right) } \, d\xi_{1} \, d\xi_{2}
+\end{equation}
+\begin{equation}
+    W_1(x_{1}, x_{2},2L) = \sum_{n,m} \iint a_m a_n e^{i 2\pi (m\xi_1 - n\xi_2)/d} W_0(\xi_{1}, \xi_{2},L) e^{\frac{ik}{2L} \left( (x_1 - \xi_1)^2 - (x_2 - \xi_2)^2 \right) } \, d\xi_{1} \, d\xi_{2}
+\end{equation}
+It can be noticed that this can be simplified since the grating's $m^\text{th}$ order makes a shift to the Fresnel kernel:\\
+\begin{equation}
+    e^{i\frac{2\pi m}{d}\xi_1} K^* \left( x_1, \xi_1\right) = e^{i\frac{2\pi m}{d}x_1} \cdot e^{i \pi\frac{\lambda L}{d^2}m^2} K^* \left( x_1 + \frac{m \lambda L}{d}, \xi_1\right)
+\end{equation}
+The intermediate step is:\\
+\begin{equation}
+    e^{i\frac{2\pi m}{d}x_1} \cdot e^{i \pi\frac{\lambda L}{d^2}m^2} \cdot e^{- \frac{ik}{2L}(x_1 + \frac{m \lambda L}{d} - \xi_1)^2} = e^{i\frac{2\pi m}{d}\xi_1} \cdot e^{- \frac{ik}{2L}(x_1 - \xi_1)^2}
+\end{equation}
+Likewise the conjugate transforms as:\\
+\begin{equation}
+    e^{-i\frac{2\pi n}{d}\xi_2} K \left( x_2, \xi_2\right) = e^{-i\frac{2\pi n}{d}x_2} \cdot e^{-i \pi\frac{\lambda L}{d^2}n^2} K \left( x_2 - \frac{n \lambda L}{d}, \xi_2\right)
+\end{equation}
+The noteworthy parts of the transformation are that the oscillations in $x$ are produced by the grating, with periodicity $n/d$, a Talbot phase is also acquired. Overall this gives the CSD as:\\
+\begin{equation}
+    W_1(x_1, x_2, 2L) = \sum_{m, n} a_m a_n e^{i \frac{2\pi}{d}\left( mx_1 - nx_2\right)} e^{i \pi \frac{\lambda L}{d^2} (m^2 - n^2)} W_0 (x_1 + \frac{m \lambda L}{d}, x_2 - \frac{n \lambda L}{d}, L)
+\end{equation}
+Setting $x_1 = x_2 = x$ in equation \ref{eqn:singleGratingPattern} contracts the CSD to the oberservable intensity at a distance $z$ beyond the grating. Since $W_0$ has been left unspecified, the result holds for any incident beam:\\
+\begin{equation}
+    I(x, L+z) = \sum_{m,n} a_m a_n \;
+    \underbrace{e^{i \frac{2\pi}{d}(m-n)x}}_{\text{spatial fringes}}
+    \;\underbrace{e^{i\pi \frac{\lambda L}{d^2}(m^2-n^2)}}_{\text{Talbot phase}}
+    \; \underbrace{W_0\!\left(x + \tfrac{m\lambda L}{d},\, x - \tfrac{n\lambda L}{d},\, L\right)}_{\text{coherence envelope}}
+    \label{eqn:singleGratingPattern}
+\end{equation}
+Three contributions are immediately identifiable: the transverse fringe pattern along $x$ with spatial frequencies $(m-n)/d$, so each pair of diffraction orders $(m,n)$ contributes a sinusoidal component to the pattern. The Talbot phase is quadratic in the diffraction order indices, and depends on $z$ in terms of $T_L$. This phase determines the phase of the grating re-imaging. For a pair with both $m$ and $n$ even or odd then the pattern is in phase, but for a mixed even-odd pair the phase acquires a factor of $\pi$ (assuming that L is an even multiple of the Talbot length). The third factor is the CSD of the incident beam evaluated at spatially separated arguments, corresponding to the orders being summed. This acts as a coherence envelope, suppressing contributions from pairs $(m,n)$ whose separation $\frac{(m+n) \lambda L}{d}$ exceeds the transverse coherence length of $W_0(x_1, x_2, L)$.\\
+
+\subsection*{Coherent limit}
+For a fully coherent beam $W_0 = 1$, the coherence plays no role, this is the situation is a plane wave laser. Equation \ref{eqn:singleGratingPattern} reduces to:
+\begin{equation}
+    I(x, L + z) = W_1(x, x, L + z) = \sum_{m, n} a_m a_n e^{i \frac{2\pi}{d}\left( m - n\right)x} e^{i \pi \frac{\lambda L}{d^2} (m^2 - n^2)}
+    \label{eqn:singleGratingPatternCoherent}
+\end{equation}
+This is simply the squared modulus of the grating's Fourier series propagated by the Fresnel phase. Evaluating this numerically reproduces the full Talbot carpet (figure \ref{fig:theoryTalbotCarpet}), as expected.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.45\linewidth}
+        \includegraphics[width=\linewidth]{Version_2022//ChapterInt_theory//diagrams/TLM=10.png}
+        \label{fig:m=10}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\linewidth}
+        \includegraphics[width=\linewidth]{Version_2022//ChapterInt_theory//diagrams/TLM=2.png}        
+        \label{fig:n=2}
+    \end{subfigure}
+    \hfill
+    \centering
+    \caption{Talbot carpet from evaluating derived equation \ref{eqn:singleGratingPattern} for a coherent source}
+    \label{fig:theoryTalbotCarpet}
+\end{figure}
+
+\subsection*{Incoherent limit}
+At the opposite extreme, when the coherence length of the source satisfies $\sigma_c \ll d$, the field amplitudes of the adjacent slits are statistically independent. Formally, $W_0(x_1, x_2, L) \approx 0 \text{ whenever } |x_1-x_2| \gtrsim \sigma_c$. Essentially, the light from the adjacent slits is completely incoherent. Displaced arguments in equation \ref{eqn:singleGratingPattern} give non-negligible contributions only for $m=n$. The sum in equation \ref{eqn:singleGratingPattern} collapses along the diagonal, giving:\\
+\begin{equation}
+    I(x, L + z) = W_1(x, x, L + z) = \sum_{m, n} a_m a_n = \sum_n |a_n|^2 = f
+    \label{eqn:singleGratingPatternIncoherent}
+\end{equation}
+
+This solution is clearly trivial, not dependent on $x, z$ it is just a constant intensity. The only effect by the grating is to reduce the overall intensity by the open fraction $\zeta$. This is intuitive interference requires phase relationships between paths.
+
+
+
+{\color{red} look at this for the Lau condition}
+{\color{red} include carpet visualiser}
+
+\subsection*{Gaussian Schell}
+Starting with the propagated GSM beam just before the grating we have this equation from earlier:\\
+\begin{equation}
+    W_{0}(x_{s1}, x_{s2},z=L) = I_L e^{-\frac{x_{s1}^2 + x_{s2}^2}{4\sigma_I^2(L)}}
+    e^{-\frac{(x_{s1} - x_{s2})^2}{2\sigma^2_c(L)}}
+    e^{i\frac{k}{2R(L)}(x_{s1}^2 - x_{s2}^2)}
+    \tag{\ref{eqn:propagatedCSD}}
+\end{equation}
+In order to substitute a GSM beam as $W_0$ we need to find $x_m^2 + x_n^2$ for the intensity envelope, $x_m - x_n$ for the coherence factor, $x_m^2 - x_n^2$ for the wavefront curvature, when $x_{m,n} = x \pm \frac{\{m,n\} \lambda z}{d}$:\\
+Intensity envelope:\\
+\begin{equation}
+    x_m^2 + x_n^2 = 2x^2 + \frac{2 (m - n)\lambda z}{d}x + \frac{(m^2 + n^2) \lambda^2 z^2}{d^2}
+\end{equation}
+Coherence factor:\\
+\begin{equation}
+    x_m - x_n = \frac{(m+n) \lambda z}{d}
+\end{equation}
+Wavefront curvature:\\
+\begin{equation}
+    x_m^2 - x_n^2 = \frac{2(m+n) \lambda z}{d}x + \frac{(m^2 - n^2) \lambda^2 z^2}{d^2}
+\end{equation}
+Substituting these relations in yields:\\
+\begin{equation}
+    W_{0}(x+\frac{m\lambda z}{d}, x - \frac{n \lambda z}{d},z=L) = I_L 
+    e^{-\frac{x^2}{2\sigma_I^2(L)}}
+    e^{-\frac{(m - n)\lambda z}{2\sigma_I^2(L)d}x}
+    e^{-\frac{(m^2 + n^2) \lambda^2 z^2}{2\sigma_I^2(L)d^2}}
+    \newline
+    e^{-\frac{(m+n)^2\lambda^2z^2}{2\sigma^2_c(L)d^2}}
+    \newline
+    e^{i\frac{\pi}{R(L)\lambda}(\frac{2(m+n) \lambda z}{d}x + \frac{(m^2 - n^2) \lambda^2 z^2}{d^2})}
+\end{equation}
+\begin{equation}
+    W_{0}(x_{s1}, x_{s2},z=L) = I_L e^{-\frac{x_{s1}^2 + x_{s2}^2}{4\sigma_I^2(L)}}
+    e^{-\frac{(x_{s1} - x_{s2})^2}{2\sigma^2_c(L)}}
+    e^{i\frac{k}{2R(L)}(x_{s1}^2 - x_{s2}^2)}
+    \tag{\ref{eqn:propagatedCSD}}
+\end{equation}
+Finally, substituting this into equation \ref{eqn:propagatedCSD}, we have:\\
+
+\begin{equation}
+\begin{aligned}
+I(x, L+z) &= I_L \, e^{-\frac{x^2}{2\sigma_I^2(L)}} 
+\sum_{m,n} a_m a_n \\[4pt]
+&\quad \underbrace{\exp\!\left[
+i\frac{2\pi}{d}\!\left((m-n)+\frac{(m+n)z}{R(L)}\right)x
++ i\pi\frac{\lambda z}{d^2}(m^2-n^2)\!\left(1+\frac{z}{R(L)}\right)
+\right]}_{\text{fringe phase + curvature tilt + Talbot phase}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m-n)\lambda z}{2\sigma_I^2(L)d}x
+-\frac{(m^2+n^2)\lambda^2 z^2}{4\sigma_I^2(L)d^2}
+\right]}_{\text{intensity envelope + envelope tilt}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m+n)^2\lambda^2 z^2}{2\sigma_c^2(L)d^2}
+\right]}_{\text{coherence filter}} .
+\end{aligned}
+\end{equation}
+
+\newpage
+This analytical form is for the intensity patter after a single grating from a single GSM beam, of width the microfluidic source slits. We can now perform a summation across periodic displacement of this pattern to get a final result for our microfluidic source:\\
+\begin{equation}
+    I_\text{microfluidic} \left( x, L + z \right) = 
+    \sum_{s=-\infty}^\infty I_\text{singleSlit} \left( x - sd, L + z \right)
+\end{equation}
+There is a key observation that the fringe phase factor remains unchangded as $e^{i 2\pi (m-n) s}=1 \forall s \in \mathbb{Z}$.
+
+\begin{equation}
+\begin{aligned}
+ I_\text{microfluidic}(x, L+z) &= \sum_{s} I_L \, e^{-\frac{(x-sd)^2}{2\sigma_I^2(L)}} 
+\sum_{m,n} a_m a_n \\[4pt]
+&\quad \underbrace{\exp\!\left[
+i\frac{2\pi}{d}\!\left((m-n)+\frac{(m+n)z}{R(L)}\right)(x - sd)
++ i\pi\frac{\lambda z}{d^2}(m^2-n^2)\!\left(1+\frac{z}{R(L)}\right)
+\right]}_{\text{fringe phase + curvature tilt + Talbot phase}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m-n)\lambda z}{2\sigma_I^2(L)d}(x - sd)
+-\frac{(m^2+n^2)\lambda^2 z^2}{4\sigma_I^2(L)d^2}
+\right]}_{\text{intensity envelope + envelope tilt}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m+n)^2\lambda^2 z^2}{2\sigma_c^2(L)d^2}
+\right]}_{\text{coherence filter}} .
+\end{aligned}
+\end{equation}
+Extracting the components that do not depend on $s$ simplifies the microfluidic intensity to:\\
+\begin{equation}
+\begin{aligned}
+ I_\text{microfluidic}(x, L+z) &= I_L \, 
+\sum_{m,n} a_m a_n \\[4pt]
+&\quad \underbrace{\exp\!\left[
+i\frac{2\pi}{d}\!\left((m-n)+\frac{(m+n)z}{R(L)}\right)x
++ i\pi\frac{\lambda z}{d^2}(m^2-n^2)\!\left(1+\frac{z}{R(L)}\right)
+\right]}_{\text{fringe phase + curvature tilt + Talbot phase}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m-n)\lambda z}{2\sigma_I^2(L)d}x
+-\frac{(m^2+n^2)\lambda^2 z^2}{4\sigma_I^2(L)d^2}
+\right]}_{\text{intensity envelope + envelope tilt}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{(m+n)^2\lambda^2 z^2}{2\sigma_c^2(L)d^2}
+\right]}_{\text{coherence filter}}\\[4pt]
+& \sum_{s} e^{-\frac{(x-sd)^2}{2\sigma_I^2(L)}}
+\exp\!\left[
+i2\pi\!\left((m-n)+\frac{(m+n)z}{R(L)}\right)s \right] \exp\!\left[
+-\frac{(m-n)\lambda z}{2\sigma_I^2(L)}s \right]
+\end{aligned}
+\end{equation}
+A final simplication can be made by shift he $(m,n)$ sum into new variables $(p,q) = (m-n, m+n)$. This simplification leads to: $m^2 - n^2 = pq, m^2 + n^2 = \frac{p^2+q^2}{2}$:
+\begin{equation}
+\begin{aligned}
+ I_\text{microfluidic}(x, L+z) &= I_L \, 
+\sum_{p,q} a_\frac{q+p}{2} a_\frac{q-p}{2} \\[4pt]
+&\quad \underbrace{\exp\!\left[
+i\frac{2\pi}{d}\!\left(p+\frac{qz}{R(L)}\right)x
++ i\pi\frac{\lambda z}{d^2}pq\!\left(1+\frac{z}{R(L)}\right)
+\right]}_{\text{fringe phase + curvature tilt + Talbot phase}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{p\lambda z}{2\sigma_I^2(L)d}x
+-\frac{(\frac{p^2+q^2}{2})\lambda^2 z^2}{4\sigma_I^2(L)d^2}
+\right]}_{\text{intensity envelope + envelope tilt}} \\[6pt]
+&\quad \underbrace{\exp\!\left[
+-\frac{q^2\lambda^2 z^2}{2\sigma_c^2(L)d^2}
+\right]}_{\text{coherence filter}}\\[4pt]
+& \sum_{s} e^{-\frac{(x-sd)^2}{2\sigma_I^2(L)}}
+\exp\!\left[
+i2\pi\!\left(p+\frac{qz}{R(L)}\right)s \right] \exp\!\left[
+-\frac{p\lambda z}{2\sigma_I^2(L)}s \right]
+\end{aligned}
+\end{equation}</p>
       </div>
 
       <!-- EXAMPLE of how to add a section from your .tex:
