@@ -239,8 +239,8 @@ function computeCarpet(M, f, sI0, sc0, LNorm, invR0, NZ, NX, xiHalf, xCenter, zm
         if (Math.abs(amn) < 1e-15) continue;
 
         const Bamp = amn
-          * Math.exp(-(m*m + n*n)*zeta*zeta / sIL2)
-          * Math.exp(-2.0*(m+n)*(m+n)*zeta*zeta / sCL2);
+          * Math.exp(-(m*m + n*n)*zeta*zeta / (4.0*sIL2))
+          * Math.exp(-(m-n)*(m-n)*zeta*zeta / (2.0*sCL2));
         if (Math.abs(Bamp) < 1e-30) continue;
 
         const BphaseAngle = TWO_PI * (m*m - n*n) * zeta * (1 + zeta/rhoEff);
@@ -248,8 +248,8 @@ function computeCarpet(M, f, sI0, sc0, LNorm, invR0, NZ, NX, xiHalf, xCenter, zm
         const BIm = Bamp * Math.sin(BphaseAngle);
 
         // phi = i*2pi*(m-n)*(1+zeta/rhoEff) + (m+n)*zeta/(2*sIL^2)
-        const phiRe = -(m-n)*zeta / sIL2;
-        const phiIm = TWO_PI * ((m-n) + (m+n)*zeta/rhoEff);
+        const phiRe = (m+n)*zeta / (2.0*sIL2);
+        const phiIm = TWO_PI * (m-n) * (1.0 + zeta/rhoEff);
 
         // At x0: exp(phi*x0)
         const ang0 = phiIm * x0;
