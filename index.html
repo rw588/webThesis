@@ -239,7 +239,6 @@
     /* ─── iframe Panels ───────────────────────────────── */
     .iframe-panel {
       width: 100%;
-      height: calc(100vh - 130px);
       display: flex;
       flex-direction: column;
     }
@@ -272,10 +271,12 @@
     .iframe-toolbar a:hover { color: var(--gold); }
 
     .iframe-panel iframe {
-      flex: 1;
       border: none;
       width: 100%;
-      background: #fff;
+      display: block;
+      /* Generous floor so content is never cut off even before JS measures */
+      min-height: 2400px;
+      overflow: hidden;
     }
 
     /* ─── Math / Derivations Panel ────────────────────── */
@@ -485,6 +486,7 @@
         src="fullGaussianSchellWeb.html"
         title="Gaussian Schell-Model Interactive Visualizer"
         loading="lazy"
+        scrolling="no"
         allowfullscreen
       ></iframe>
     </div>
@@ -504,6 +506,7 @@
         src="wignerCarpet.html"
         title="Wigner–GSM Talbot Carpet"
         loading="lazy"
+        scrolling="no"
         allowfullscreen
       ></iframe>
     </div>
@@ -523,6 +526,7 @@
         src="microfluidicAnalyticWeb.html"
         title="Microfluidic Analytic Visualizer"
         loading="lazy"
+        scrolling="no"
         allowfullscreen
       ></iframe>
     </div>
@@ -542,6 +546,7 @@
         src="microFluidicWigner.html"
         title="Microfluidic Wigner Carpet"
         loading="lazy"
+        scrolling="no"
         allowfullscreen
       ></iframe>
     </div>
@@ -862,6 +867,51 @@ $$
 
 <!-- ══════════════════════════════════════════════ JS -->
 <script>
+  // ── iframe auto-sizing ────────────────────────────
+  // Temporarily un-suppresses overflow before measuring so scrollHeight is never
+  // clamped, then re-suppresses to hide the sub-page's own scrollbar.
+  function fitIframe(iframe) {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.documentElement.style.overflow = '';
+      doc.body.style.overflow = '';
+      void doc.body.offsetHeight; // force layout
+      const h = Math.max(
+        doc.body.scrollHeight,       doc.body.offsetHeight,
+        doc.documentElement.scrollHeight, doc.documentElement.offsetHeight
+      );
+      doc.documentElement.style.overflow = 'hidden';
+      doc.body.style.overflow = 'hidden';
+      if (h > 100) iframe.style.height = h + 'px';
+    } catch (e) {
+      iframe.style.height = 'calc(100vh - 130px)';
+    }
+  }
+
+  // Poll every 400 ms until height is stable for 5 consecutive reads (2 s),
+  // then stop. Cap at 30 s in case something keeps changing.
+  const _pollers = new Map();
+  function startPolling(iframe) {
+    if (_pollers.has(iframe)) clearInterval(_pollers.get(iframe));
+    let prev = 0, streak = 0;
+    const deadline = Date.now() + 30000;
+    const id = setInterval(() => {
+      fitIframe(iframe);
+      const cur = parseInt(iframe.style.height) || 0;
+      streak = (cur === prev) ? streak + 1 : 0;
+      prev = cur;
+      if (streak >= 5 || Date.now() > deadline) {
+        clearInterval(id);
+        _pollers.delete(iframe);
+      }
+    }, 400);
+    _pollers.set(iframe, id);
+  }
+
+  document.querySelectorAll('.iframe-panel iframe').forEach(iframe => {
+    iframe.addEventListener('load', () => startPolling(iframe));
+  });
+
   // ── Tab switching ─────────────────────────────────
   function switchTab(targetId) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -871,6 +921,12 @@ $$
       panel.classList.toggle('active', panel.id === targetId);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Re-fit the iframe in the newly visible tab immediately
+    const panel = document.getElementById(targetId);
+    if (panel) {
+      const iframe = panel.querySelector('iframe');
+      if (iframe) startPolling(iframe);
+    }
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -890,6 +946,7 @@ $$
   if (location.hash && hashMap[location.hash]) {
     switchTab(hashMap[location.hash]);
   }
+
 </script>
 
 </body>
