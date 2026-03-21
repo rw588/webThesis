@@ -412,6 +412,8 @@
   <button class="tab-btn" data-target="panel-wigner">Wigner Carpet</button>
   <button class="tab-btn" data-target="panel-micro">Microfluidic Demo</button>
   <button class="tab-btn" data-target="panel-micro-wigner">Microfluidic Wigner</button>
+  <button class="tab-btn" data-target="panel-chromatic">Chromatic Wigner</button>
+  <button class="tab-btn" data-target="panel-velocity">Velocity Distribution</button>
   <button class="tab-btn" data-target="panel-math">Derivations</button>
   <button class="tab-btn" data-target="panel-refs">References</button>
 </nav>
@@ -451,10 +453,20 @@
           <p>Analytic model for a grating where each slit is a mutually incoherent source. In the LEMING collaboration this source is referred to as a microfluidic source, in refernce to the He-II capillary action utilised in the source. This is simply a sum of the narrow GSM simulation with periodic displacement equal to that of the grating. 
           </p>
         </div>
+        <div class="card" onclick="switchTab('panel-velocity')">
+          <div class="card-icon">v</div>
+          <h3>Velocity Distribution</h3>
+          <p>Contrast reduction from velocity spread — Gaussian, Maxwell, top-hat, delta distributions with selectable interferometer parameters.</p>
+        </div>
         <div class="card" onclick="switchTab('panel-micro-wigner')">
           <div class="card-icon">𝒲</div>
           <h3>Microfluidic Wigner</h3>
           <p>Exact Wigner phase-space propagation for the periodic microfluidic source — combines the multi-slit incoherent sum with exact propagation.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-chromatic')">
+          <div class="card-icon">𝒲̃</div>
+          <h3>Chromatic Wigner</h3>
+          <p>Polychromatic Talbot carpet with Gaussian velocity averaging — analytical damping of fringe orders, per-velocity preview, and contrast vs. z.</p>
         </div>
         <div class="card" onclick="switchTab('panel-math')">
           <div class="card-icon">∫</div>
@@ -546,6 +558,45 @@
         src="microFluidicWigner.html"
         title="Microfluidic Wigner Carpet"
         loading="lazy"
+        scrolling="no"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── CHROMATIC WIGNER ────────────────────────────── -->
+  <section class="tab-panel" id="panel-chromatic">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">microFluidicWignerChromatic.html</span>
+        <a href="microFluidicWignerChromatic.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="microFluidicWignerChromatic.html"
+        title="Polychromatic Microfluidic GSM Talbot Carpet"
+        loading="lazy"
+        scrolling="no"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── VELOCITY DISTRIBUTION ──────────────────────── -->
+  <section class="tab-panel" id="panel-velocity">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">velocityDistribution.html</span>
+        <a href="velocityDistribution.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="velocityDistribution.html"
+        title="Velocity Distribution &amp; Contrast"
         scrolling="no"
         allowfullscreen
       ></iframe>
@@ -939,6 +990,7 @@ $$
     '#wigner': 'panel-wigner',
     '#micro':        'panel-micro',
     '#micro-wigner': 'panel-micro-wigner',
+    '#velocity':     'panel-velocity',
     '#math':  'panel-math',
     '#refs':  'panel-refs',
   };

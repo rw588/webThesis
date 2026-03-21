@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velocity Distribution &amp; Contrast</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]})"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08080e; color: #ddddee; font-family: 'Consolas', monospace; font-size: 15px; padding: 12px; }
+  h2 { text-align: center; margin-bottom: 6px; font-size: 18px; letter-spacing: 1px; color: #aaccff; }
+  .subtitle { text-align: center; margin-bottom: 10px; font-size: 13px; color: #6688aa; line-height: 1.8; }
+  .canvas-row { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
+  .canvas-wrap { display: flex; flex-direction: column; align-items: center; }
+  .canvas-wrap label { font-size: 13px; color: #99aacc; margin-bottom: 4px; }
+  canvas { display: block; border: 1px solid #333355; }
+  .bottom-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  #infoPanel { border: 1px solid #333355; padding: 8px 14px; background: #0e0e1a; width: 100%; font-size: 13px; line-height: 1.5; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 20px; }
+  .info-head { grid-column: 1 / -1; font-weight: bold; color: #aaccff; margin-top: 6px; font-size: 13px; }
+  .info-kv { display: flex; gap: 4px; white-space: nowrap; }
+  .info-k { color: #99aacc; }
+  .info-v { color: #ffcc88; }
+  hr { border: none; border-top: 1px solid #334; margin: 10px 0; }
+  .controls { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .ctrl-col { display: flex; flex-direction: column; gap: 8px; min-width: 320px; }
+  .ctrl-col h3 { font-size: 14px; color: #aaccff; margin-bottom: 2px; }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row label { width: 210px; font-size: 14px; color: #ccccdd; text-align: right; }
+  .slider-row input[type=range] { flex: 1; accent-color: #5588ff; }
+  .slider-row span { width: 70px; text-align: right; font-size: 14px; color: #ffcc88; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+  button { background: #1a1a2e; border: 1px solid #446; color: #ccddff; padding: 5px 14px;
+           cursor: pointer; font-size: 14px; border-radius: 3px; }
+  button:hover { background: #2a2a4e; border-color: #668; }
+  button.active { background: #223355; border-color: #88aadd; color: #ffffff; }
+  .slider-row.row-disabled { opacity: 0.32; pointer-events: none; }
+</style>
+</head>
+<body>
+<h2>Velocity Distribution &mdash; Interferometric Contrast Reduction</h2>
+<div class="subtitle">
+\[I(x)=\int A(v)\cos\!\left(k\!\left[x+\tfrac{g}{2}\!\left(\tfrac{L}{v}\right)^{\!2}\right]\right)dv+C
+\qquad\longrightarrow\qquad
+C_{\rm eff}=A\left|\int\!\tilde{A}(v)\,e^{\,ik\phi(v)}\,dv\right|,\quad\phi(v)=g\!\left(\tfrac{L}{v}\right)^{\!2}=gt^2\]
+</div>
+
+<div class="canvas-row">
+  <div class="canvas-wrap">
+    <label>Velocity distribution &nbsp;A(v)</label>
+    <canvas id="distCanvas" width="340" height="290"></canvas>
+  </div>
+  <div class="canvas-wrap">
+    <label>Fringe pattern &nbsp;I(x)</label>
+    <canvas id="fringeCanvas" width="400" height="290"></canvas>
+  </div>
+  <div class="canvas-wrap">
+    <label>Contrast &nbsp;C<sub>eff</sub> vs &sigma;<sub>v</sub>/v<sub>0</sub></label>
+    <canvas id="contrastCanvas" width="400" height="290"></canvas>
+  </div>
+</div>
+
+<div class="canvas-row">
+  <div class="canvas-wrap">
+    <label>Talbot length distribution &nbsp;T<sub>L</sub>(v)</label>
+    <canvas id="talbotDistCanvas" width="500" height="240"></canvas>
+  </div>
+  <div class="canvas-wrap">
+    <label>Talbot phase distribution &nbsp;N<sub>T</sub>(v) = L<sub>arm</sub>/T<sub>L</sub>(v)</label>
+    <canvas id="ntDistCanvas" width="500" height="240"></canvas>
+  </div>
+</div>
+
+<div class="bottom-row">
+  <div id="infoPanel">Initialising&hellip;</div>
+</div>
+<hr>
+
+<div class="controls">
+  <div class="ctrl-col">
+    <h3>Velocity distribution</h3>
+    <div class="btn-row">
+      <button id="btnDelta"   class="active">Delta</button>
+      <button id="btnGauss"  >Gaussian</button>
+      <button id="btnMaxwell">Maxwell</button>
+      <button id="btnTophat" >Top-hat</button>
+      <button id="btnReset"  style="margin-left:8px;background:#1a0a0a;border-color:#644;color:#ffbbbb;">Reset</button>
+    </div>
+    <div class="slider-row">
+      <label>Mean / centre &nbsp;v<sub>0</sub> (m/s):</label>
+      <input type="range" id="slV0"   min="100" max="5000" step="5"    value="2175">
+      <span id="valV0">2175</span>
+    </div>
+    <div class="slider-row row-disabled" id="rowSigV">
+      <label>Width &nbsp;&sigma;<sub>v</sub> (m/s):</label>
+      <input type="range" id="slSigV" min="1" max="800" step="1" value="70" disabled>
+      <span id="valSigV">70</span>
+    </div>
+    <div class="slider-row">
+      <label>Contrast &nbsp;&gamma; = (max&minus;min)/(max+min):</label>
+      <input type="range" id="slGamma" min="0" max="1" step="0.01" value="0.4">
+      <span id="valGamma">0.400</span>
+    </div>
+  </div>
+  <div class="ctrl-col">
+    <h3>Interferometer</h3>
+    <div class="slider-row">
+      <label>Total flight path &nbsp;2L (mm):</label>
+      <input type="range" id="slL"     min="0"   max="30" step="0.1"  value="19.2">
+      <span id="valL">19.2</span>
+    </div>
+    <div class="slider-row">
+      <label>Grating period &nbsp;d (nm):</label>
+      <input type="range" id="slD"     min="10"  max="10000" step="10"  value="100">
+      <span id="valD">100</span>
+    </div>
+    <div class="slider-row">
+      <label>g (m/s&sup2;):</label>
+      <input type="range" id="slG"     min="0"   max="20"   step="0.01" value="9.81">
+      <span id="valG">9.81</span>
+    </div>
+    <div class="slider-row">
+      <label>Talbot orders at v<sub>0</sub> &nbsp;N<sub>0</sub>:</label>
+      <input type="range" id="slN0"    min="1"   max="5000" step="1"    value="770">
+      <span id="valN0">770</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Defaults (also used by reset) ─────────────────────────────────────────
+const DEFAULTS = {
+  dist:    'delta',
+  v0:      2175,
+  sigV:    70,
+  L:       0.0192,
+  d:       100e-9,
+  g:       9.81,
+  gamma:   0.4,
+  N0:      770,
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  dist:    'delta',
+  v0:      2175,       // mean/centre m/s
+  sigV:    70,         // width m/s
+  L:       0.0192,     // flight path m  (= 2 × 9.6 mm)
+  d:       100e-9,     // grating period m (100 nm)
+  g:       9.81,
+  gamma:   0.4,        // contrast γ = (max−min)/(max+min) = A_amp/C_dc
+  N0:      770,        // Talbot orders at v₀: L_arm = N0 × T_L(v₀)
+};
+
+// ── Colours ────────────────────────────────────────────────────────────────
+const COL_BG     = '#0a0a14';
+const COL_IDEAL  = '#ff4444';
+const COL_ACTUAL = '#ffcc55';
+const COL_DIST   = '#55ccff';
+const AX_FONT    = '12px Consolas';
+const AX_LABEL   = '13px Consolas';
+
+// ── Velocity distribution ─────────────────────────────────────────────────
+// All distributions normalised for probability (sum P[i] = 1 after division by sum).
+function evalP(v, dist, v0, sigV) {
+  if (v <= 0) return 0;
+  const s = Math.max(sigV, 0.5);
+  if (dist === 'delta') {
+    const w = Math.max(v0 * 0.004, 1);
+    const x = (v - v0) / w;
+    return Math.exp(-0.5 * x * x);
+  }
+  if (dist === 'gauss') {
+    const x = (v - v0) / s;
+    return Math.exp(-0.5 * x * x);   // normalised by caller
+  }
+  if (dist === 'maxwell') {
+    // True Maxwell speed distribution: P(v) ∝ v² exp(−v²/2σ_MB²)
+    // s is passed as σ_MB directly (derived from mean in compute())
+    return v * v * Math.exp(-v * v / (2 * s * s));
+  }
+  if (dist === 'tophat') {
+    return Math.abs(v - v0) <= s ? 1 : 0;
+  }
+  return 0;
+}
+
+function buildDist(vArr) {
+  const { dist, v0, sigV } = state;
+  const n = vArr.length;
+  const P = new Float64Array(n);
+  let sum = 0;
+  for (let i = 0; i < n; i++) { P[i] = Math.max(0, evalP(vArr[i], dist, v0, sigV)); sum += P[i]; }
+  if (sum > 0) for (let i = 0; i < n; i++) P[i] /= sum;
+  else { P[Math.floor(n / 2)] = 1; }
+  return P;
+}
+
+// ── Contrast integral ─────────────────────────────────────────────────────
+function contrastFactor(dist, v0, sigV, vLo, vHi, k, g, L, Nq) {
+  if (L < 1e-9) return { xi: 1, phiEff: 0 };
+  const dv = (vHi - vLo) / (Nq - 1);
+  let re = 0, im = 0, norm = 0;
+  for (let i = 0; i < Nq; i++) {
+    const v   = vLo + i * dv;
+    const p   = Math.max(0, evalP(v, dist, v0, sigV));
+    const Larm = L / 2;                   // arm length = half total flight path
+    const phi = g * (Larm / v) * (Larm / v);  // φ(v) = g(L/v)², L = arm length
+    re   += p * Math.cos(k * phi);
+    im   += p * Math.sin(k * phi);
+    norm += p;
+  }
+  if (norm < 1e-30) return { xi: 0, phiEff: 0 };
+  re /= norm; im /= norm;
+  return { xi: Math.sqrt(re * re + im * im), phiEff: Math.atan2(im, re) };
+}
+
+// ── Core compute ──────────────────────────────────────────────────────────
+const NV  = 800;
+const NX  = 500;
+const NSW = 250;
+
+// σ_MB = v̄ × √(π/8) so that the Maxwell mean equals v̄ = v0
+const SQRT_PI_8 = Math.sqrt(Math.PI / 8);  // ≈ 0.6267
+
+function compute() {
+  const { dist, v0, sigV, L, d, g, gamma } = state;
+
+  // For Maxwell the width is fixed by the mean: σ_MB = v0 × √(π/8).
+  // The σ_v slider is irrelevant and greyed out.
+  const sigEff = dist === 'maxwell' ? v0 * SQRT_PI_8 : sigV;
+
+  // γ = A_amp / C_dc,  A_amp + C_dc = 1  →  A_amp = γ/(1+γ), C_dc = 1/(1+γ)
+  const A = gamma / (1 + gamma);
+  const C = 1 / (1 + gamma);
+  const k = 2 * Math.PI / d;
+
+  // Integration range: Maxwell starts at 0 and its tail reaches ~4×v0;
+  // other distributions centre on v0 with ±7σ.
+  const s   = Math.max(sigEff, 1);
+  const vLo = dist === 'maxwell' ? 1 : Math.max(5, v0 - 7 * s);
+  const vHi = dist === 'maxwell' ? Math.max(v0 * 4.5, s * 7) : v0 + 7 * s;
+
+  const vArr = new Float64Array(NV);
+  for (let i = 0; i < NV; i++) vArr[i] = vLo + (vHi - vLo) * i / (NV - 1);
+
+  // buildDist reads state.sigV; override it temporarily for maxwell
+  const savedSigV = state.sigV;
+  if (dist === 'maxwell') state.sigV = sigEff;
+  const P = buildDist(vArr);
+  state.sigV = savedSigV;
+
+  const { xi, phiEff } = contrastFactor(dist, v0, sigEff, vLo, vHi, k, g, L, NV);
+
+  // Fringe pattern over ±3 grating periods
+  const xHalf = 3 * d;
+  const xArr     = new Float64Array(NX);
+  const I_actual = new Float64Array(NX);
+  const I_ideal  = new Float64Array(NX);
+  for (let j = 0; j < NX; j++) {
+    const x    = -xHalf + 2 * xHalf * j / (NX - 1);
+    xArr[j]     = x;
+    I_actual[j] = C + A * xi * Math.cos(k * x - phiEff);
+    I_ideal[j]  = C + A * Math.cos(k * x);
+  }
+
+  // Contrast curve x-axis:
+  //   Maxwell  → σ_MB/v₀, operating point always at SQRT_PI_8 ≈ 0.627
+  //   delta    → σ_v/v₀ but fixed at 0; show a modest range
+  //   others   → σ_v/v₀, auto-scale to 5× current value
+  const curFrac = dist === 'maxwell' ? SQRT_PI_8
+                : dist === 'delta'   ? 0
+                : sigV / v0;
+  const swMax   = dist === 'maxwell' ? 1.5
+                : dist === 'delta'   ? 0.15
+                : Math.max(curFrac * 5, 0.005);
+  const xAxisLabel = dist === 'maxwell' ? '\u03c3\u1d39\u1d2e/v\u2080'  // σ_MB/v₀
+                                        : '\u03c3_v/v\u2080';
+
+  const swArr = new Float64Array(NSW);
+  const cArr  = new Float64Array(NSW);
+  for (let si = 0; si < NSW; si++) {
+    const frac = swMax * si / (NSW - 1);
+    const sv   = frac * v0;           // σ_MB for Maxwell, σ_v for others
+    swArr[si]  = frac;
+    if (sv < 0.5) { cArr[si] = 1; continue; }
+    const svLo = dist === 'maxwell' ? 1 : Math.max(5, v0 - 7 * sv);
+    const svHi = dist === 'maxwell' ? Math.max(v0 * 4.5, sv * 7) : v0 + 7 * sv;
+    const { xi: xi2 } = contrastFactor(dist, v0, sv, svLo, svHi, k, g, L, 300);
+    cArr[si] = xi2;
+  }
+
+  const Larm = L / 2;
+  // φ₀ = g·(L/v₀)² in metres (L = arm length); in radians = k·φ₀
+  const phi0_m  = Larm > 0 ? g * (Larm / v0) * (Larm / v0) : 0;  // metres
+  const phi0    = k * phi0_m;                                        // radians
+
+  // ── Talbot distributions ──────────────────────────────────────────────
+  const N0 = Math.max(1, state.N0);
+  // T_L(v₀) = L_arm / N₀  [metres]
+  const TL0_m  = Larm / N0;
+  const TL0_um = TL0_m * 1e6;
+
+  // T_L(v) = T_L₀ × v/v₀  — same shape as velocity distribution, x in μm
+  const tLArr_um = Array.from(vArr).map(v => TL0_um * v / v0);
+
+  // N_T(v) = N₀ × v₀/v  (more Talbot lengths = slower atoms)
+  // Jacobian: P(N_T) dN_T = P(v)|dv/dN_T| dN_T = P(v)·v²/(N₀·v₀) dN_T
+  const ntRaw  = Array.from(vArr).map(v => N0 * v0 / v);   // descending
+  const pNTraw = Array.from(vArr).map((v, i) => P[i] * v * v / (N0 * v0));
+
+  // Reverse so N_T is ascending
+  const ntSorted = ntRaw.slice().reverse();
+  const pNTrev   = pNTraw.slice().reverse();
+
+  // Re-normalise
+  const sumPNT = pNTrev.reduce((a, b) => a + b, 0);
+  const pNTnorm = sumPNT > 0 ? pNTrev.map(p => p / sumPNT) : pNTrev;
+
+  // Clip at 99th percentile to avoid infinite tail (slow atoms → huge N_T)
+  let cumNT = 0;
+  let ntPlotMax = ntSorted[ntSorted.length - 1];
+  for (let i = 0; i < ntSorted.length; i++) {
+    cumNT += pNTnorm[i];
+    if (cumNT >= 0.99) { ntPlotMax = ntSorted[i]; break; }
+  }
+
+  return { vArr, P, vLo, vHi, xi, phiEff, xArr, I_actual, I_ideal, xHalf, d, k,
+           swArr, cArr, swMax, curFrac, xAxisLabel, phi0, phi0_m, A, C, sigEff,
+           tLArr_um, TL0_um, ntSorted, pNTnorm, ntPlotMax, N0 };
+}
+
+// ── Axis helper ────────────────────────────────────────────────────────────
+function drawAxes(ctx, W, H, pl, pr, pt, pb, xlabel, ylabel,
+                  xmin, xmax, ymin, ymax, nxt, nyt) {
+  const iW = W - pl - pr, iH = H - pt - pb;
+  ctx.strokeStyle = '#222244'; ctx.lineWidth = 1;
+  ctx.strokeRect(pl, pt, iW, iH);
+
+  ctx.fillStyle = '#8899bb'; ctx.font = AX_FONT;
+
+  for (let i = 0; i <= nxt; i++) {
+    const xv = xmin + (xmax - xmin) * i / nxt;
+    const px = pl + iW * i / nxt;
+    ctx.strokeStyle = '#222244'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, pt + iH); ctx.lineTo(px, pt + iH + 4); ctx.stroke();
+    ctx.textAlign = 'center';
+    const label = Math.abs(xv) < 1e-9 ? '0'
+                : Math.abs(xv) >= 1000 ? xv.toFixed(0)
+                : Math.abs(xv) >= 10   ? xv.toPrecision(3)
+                :                        xv.toPrecision(2);
+    ctx.fillText(label, px, pt + iH + 14);
+    ctx.strokeStyle = '#161626'; ctx.lineWidth = 0.5; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(px, pt); ctx.lineTo(px, pt + iH); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (let i = 0; i <= nyt; i++) {
+    const yv = ymin + (ymax - ymin) * i / nyt;
+    const py = pt + iH - iH * i / nyt;
+    ctx.strokeStyle = '#222244'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pl - 4, py); ctx.lineTo(pl, py); ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(yv.toFixed(2), pl - 6, py + 4);
+    ctx.strokeStyle = '#161626'; ctx.lineWidth = 0.5; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(pl, py); ctx.lineTo(pl + iW, py); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.font = AX_LABEL; ctx.fillStyle = '#99aabb'; ctx.textAlign = 'center';
+  ctx.fillText(xlabel, pl + iW / 2, H - 3);
+  ctx.save(); ctx.translate(13, pt + iH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText(ylabel, 0, 0); ctx.restore();
+
+  return { pl, pt, iW, iH, xmin, xmax, ymin, ymax };
+}
+
+function toPx(ax, xv, yv) {
+  return [
+    ax.pl + ax.iW * (xv - ax.xmin) / (ax.xmax - ax.xmin),
+    ax.pt + ax.iH * (1 - (yv - ax.ymin) / (ax.ymax - ax.ymin)),
+  ];
+}
+
+function polyline(ctx, ax, xs, ys) {
+  ctx.beginPath();
+  for (let i = 0; i < xs.length; i++) {
+    const [px, py] = toPx(ax, xs[i], ys[i]);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+// ── Distribution canvas ────────────────────────────────────────────────────
+function renderDist(res) {
+  const canvas = document.getElementById('distCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = COL_BG; ctx.fillRect(0, 0, W, H);
+
+  const { vArr, P, vLo, vHi } = res;
+  const pmax = Math.max(...P) * 1.12 || 1;
+
+  const ax = drawAxes(ctx, W, H, 52, 12, 16, 30,
+    'v  (m/s)', 'A(v)', vLo, vHi, 0, pmax, 4, 3);
+
+  // Fill under curve
+  ctx.fillStyle = 'rgba(85,204,255,0.12)';
+  ctx.beginPath();
+  const [px0, pyB] = toPx(ax, vArr[0], 0);
+  ctx.moveTo(px0, pyB);
+  for (let i = 0; i < vArr.length; i++) {
+    const [px, py] = toPx(ax, vArr[i], P[i]);
+    ctx.lineTo(px, py);
+  }
+  const [pxL, pyBL] = toPx(ax, vArr[vArr.length - 1], 0);
+  ctx.lineTo(pxL, pyBL); ctx.closePath(); ctx.fill();
+
+  // Curve
+  ctx.strokeStyle = COL_DIST; ctx.lineWidth = 2;
+  polyline(ctx, ax, Array.from(vArr), Array.from(P));
+
+  // v0 marker
+  const [vPx] = toPx(ax, state.v0, 0);
+  ctx.strokeStyle = 'rgba(255,200,80,0.65)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(vPx, ax.pt); ctx.lineTo(vPx, ax.pt + ax.iH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = '11px Consolas'; ctx.fillStyle = '#ffcc88'; ctx.textAlign = 'center';
+  ctx.fillText('v₀', vPx, ax.pt + 12);
+
+  // For Maxwell, annotate the derived σ_MB
+  if (state.dist === 'maxwell') {
+    const sigMB = res.sigEff;
+    ctx.font = '10px Consolas'; ctx.fillStyle = '#88bbcc'; ctx.textAlign = 'left';
+    ctx.fillText(`\u03c3\u1d39\u1d2e = v\u2080\u221a(\u03c0/8) = ${sigMB.toFixed(0)} m/s`, ax.pl + 4, ax.pt + ax.iH - 6);
+  }
+}
+
+// ── Fringe canvas ──────────────────────────────────────────────────────────
+function renderFringe(res) {
+  const canvas = document.getElementById('fringeCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = COL_BG; ctx.fillRect(0, 0, W, H);
+
+  const { xArr, I_actual, I_ideal, d, A, C } = res;
+  const xUnit = Array.from(xArr).map(x => x / d);
+  const ypad = 0.08;
+  const ymin = Math.min(C - A, 0) - ypad;
+  const ymax = C + A + ypad;
+
+  const ax = drawAxes(ctx, W, H, 52, 12, 16, 30,
+    'x / d', 'I(x)', -3, 3, ymin, ymax, 6, 4);
+
+  // Ideal (dashed blue)
+  ctx.strokeStyle = COL_IDEAL; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
+  polyline(ctx, ax, xUnit, Array.from(I_ideal));
+  ctx.setLineDash([]);
+
+  // Actual (solid yellow)
+  ctx.strokeStyle = COL_ACTUAL; ctx.lineWidth = 2.5;
+  polyline(ctx, ax, xUnit, Array.from(I_actual));
+
+  // Legend
+  ctx.font = '11px Consolas';
+  ctx.strokeStyle = COL_IDEAL; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
+  ctx.beginPath(); ctx.moveTo(ax.pl + 5, ax.pt + 12); ctx.lineTo(ax.pl + 26, ax.pt + 12); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = COL_IDEAL; ctx.textAlign = 'left';
+  ctx.fillText('ideal (δ)', ax.pl + 29, ax.pt + 16);
+  ctx.strokeStyle = COL_ACTUAL; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(ax.pl + 5, ax.pt + 26); ctx.lineTo(ax.pl + 26, ax.pt + 26); ctx.stroke();
+  ctx.fillText('integrated', ax.pl + 29, ax.pt + 30);
+}
+
+// ── Contrast curve canvas ──────────────────────────────────────────────────
+function renderContrast(res) {
+  const canvas = document.getElementById('contrastCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = COL_BG; ctx.fillRect(0, 0, W, H);
+
+  const { swArr, cArr, swMax, curFrac, xAxisLabel } = res;
+  const { gamma } = state;
+  const xmax = swMax;
+
+  const ax = drawAxes(ctx, W, H, 52, 12, 16, 30,
+    xAxisLabel, 'γ_eff', 0, xmax, 0, Math.max(gamma, 0.01) * 1.08, 5, 4);
+
+  // Input contrast horizontal guide
+  ctx.strokeStyle = '#334466'; ctx.lineWidth = 1; ctx.setLineDash([2, 5]);
+  const [, pyA] = toPx(ax, 0, gamma);
+  ctx.beginPath(); ctx.moveTo(ax.pl, pyA); ctx.lineTo(ax.pl + ax.iW, pyA); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = '11px Consolas'; ctx.fillStyle = '#557799'; ctx.textAlign = 'left';
+  ctx.fillText('γ', ax.pl + 3, pyA - 3);
+
+  // Contrast curve: cArr holds ξ(σ_v); γ_eff = γ·ξ
+  const gammaArr = Array.from(cArr).map(v => v * gamma);
+  ctx.strokeStyle = '#55ddaa'; ctx.lineWidth = 2.5;
+  polyline(ctx, ax, Array.from(swArr), gammaArr);
+
+  // Current operating point
+  const cCur = res.xi * gamma;
+  const [cpx, cpy] = toPx(ax, curFrac, cCur);
+  ctx.fillStyle = '#ffcc55';
+  ctx.beginPath(); ctx.arc(cpx, cpy, 6, 0, 2 * Math.PI); ctx.fill();
+  ctx.font = '11px Consolas'; ctx.fillStyle = '#ffcc88'; ctx.textAlign = 'left';
+  const labelX = cpx + 10 > ax.pl + ax.iW - 60 ? cpx - 62 : cpx + 10;
+  ctx.fillText(`C = ${cCur.toFixed(3)}`, labelX, cpy + 4);
+
+  // Current σ_v/v0 vertical marker
+  const [spx] = toPx(ax, curFrac, 0);
+  ctx.strokeStyle = 'rgba(255,200,80,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(spx, ax.pt); ctx.lineTo(spx, ax.pt + ax.iH); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ── Talbot distribution canvases ───────────────────────────────────────────
+const COL_TALBOT = '#88ffcc';   // mint green for Talbot plots
+const COL_NT     = '#cc88ff';   // violet for N_T plot
+
+function renderTalbot(res) {
+  const { tLArr_um, TL0_um, ntSorted, pNTnorm, ntPlotMax, N0, vArr, P, vLo, vHi } = res;
+
+  // ── T_L distribution canvas ──
+  {
+    const canvas = document.getElementById('talbotDistCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = COL_BG; ctx.fillRect(0, 0, W, H);
+
+    const tLmax = tLArr_um[tLArr_um.length - 1];
+    const tLmin = tLArr_um[0];
+    const pmax  = Math.max(...P) * 1.12 || 1;
+
+    const ax = drawAxes(ctx, W, H, 58, 12, 16, 30,
+      'T\u2097(v)  (\u03bcm)', 'P(T\u2097)',
+      tLmin, tLmax, 0, pmax, 5, 3);
+
+    // Fill under curve
+    ctx.fillStyle = 'rgba(136,255,204,0.10)';
+    ctx.beginPath();
+    const [px0, pyB] = toPx(ax, tLArr_um[0], 0);
+    ctx.moveTo(px0, pyB);
+    for (let i = 0; i < tLArr_um.length; i++) {
+      const [px, py] = toPx(ax, tLArr_um[i], P[i]);
+      ctx.lineTo(px, py);
+    }
+    const [pxL, pyBL] = toPx(ax, tLArr_um[tLArr_um.length - 1], 0);
+    ctx.lineTo(pxL, pyBL); ctx.closePath(); ctx.fill();
+
+    // Curve
+    ctx.strokeStyle = COL_TALBOT; ctx.lineWidth = 2;
+    polyline(ctx, ax, tLArr_um, Array.from(P));
+
+    // T_L(v₀) marker
+    const [tPx] = toPx(ax, TL0_um, 0);
+    ctx.strokeStyle = 'rgba(255,200,80,0.65)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(tPx, ax.pt); ctx.lineTo(tPx, ax.pt + ax.iH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '11px Consolas'; ctx.fillStyle = '#ffcc88'; ctx.textAlign = 'center';
+    ctx.fillText(`T\u2097\u2080 = ${TL0_um.toFixed(3)} \u03bcm`, tPx, ax.pt + 12);
+
+    // Annotation: T_L0 value
+    ctx.font = '11px Consolas'; ctx.fillStyle = '#88bbcc'; ctx.textAlign = 'left';
+    ctx.fillText(`T\u2097(v\u2080) = L\u2090\u2099\u2098/${N0} = ${TL0_um.toFixed(3)} \u03bcm`, ax.pl + 4, ax.pt + ax.iH - 6);
+  }
+
+  // ── N_T distribution canvas ──
+  {
+    const canvas = document.getElementById('ntDistCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = COL_BG; ctx.fillRect(0, 0, W, H);
+
+    // Only plot up to 99th percentile
+    const clipIdx = ntSorted.findIndex(n => n >= ntPlotMax);
+    const ntClip  = clipIdx > 1 ? ntSorted.slice(0, clipIdx + 1) : ntSorted;
+    const pNTClip = clipIdx > 1 ? pNTnorm.slice(0, clipIdx + 1) : pNTnorm;
+
+    const ntMin  = ntClip[0];
+    const ntMax2 = ntClip[ntClip.length - 1];
+    const pNTmax = Math.max(...pNTClip) * 1.12 || 1;
+
+    const ax = drawAxes(ctx, W, H, 58, 12, 16, 30,
+      'N\u209c(v) = L\u2090\u2099\u2098/T\u2097(v)', 'P(N\u209c)',
+      ntMin, ntMax2, 0, pNTmax, 5, 3);
+
+    // Fill under curve
+    ctx.fillStyle = 'rgba(204,136,255,0.10)';
+    ctx.beginPath();
+    const [px0, pyB] = toPx(ax, ntClip[0], 0);
+    ctx.moveTo(px0, pyB);
+    for (let i = 0; i < ntClip.length; i++) {
+      const [px, py] = toPx(ax, ntClip[i], pNTClip[i]);
+      ctx.lineTo(px, py);
+    }
+    const [pxL, pyBL] = toPx(ax, ntClip[ntClip.length - 1], 0);
+    ctx.lineTo(pxL, pyBL); ctx.closePath(); ctx.fill();
+
+    // Curve
+    ctx.strokeStyle = COL_NT; ctx.lineWidth = 2;
+    polyline(ctx, ax, ntClip, pNTClip);
+
+    // N₀ marker (N_T at v₀)
+    if (N0 >= ntMin && N0 <= ntMax2) {
+      const [nPx] = toPx(ax, N0, 0);
+      ctx.strokeStyle = 'rgba(255,200,80,0.65)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(nPx, ax.pt); ctx.lineTo(nPx, ax.pt + ax.iH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '11px Consolas'; ctx.fillStyle = '#ffcc88'; ctx.textAlign = 'center';
+      ctx.fillText(`N\u2080 = ${N0}`, nPx, ax.pt + 12);
+    }
+
+    // Note about 99th percentile clipping
+    ctx.font = '10px Consolas'; ctx.fillStyle = '#667788'; ctx.textAlign = 'right';
+    ctx.fillText('(clipped at 99th percentile)', ax.pl + ax.iW - 4, ax.pt + ax.iH - 6);
+  }
+}
+
+// ── Info panel ─────────────────────────────────────────────────────────────
+function renderInfo(res) {
+  const { xi, phiEff, phi0, phi0_m, A, C, TL0_um, N0 } = res;
+  const { dist, v0, sigV, L, d, g, gamma } = state;
+  const k = 2 * Math.PI / d;
+  const Larm = L / 2;
+  const showSig = dist !== 'delta' && dist !== 'maxwell';
+  const gammaEff = gamma * xi;
+
+  // Convert radian phases → length (pm) via Δx = φ_rad × d/(2π)
+  const phi0_pm   = phi0_m   * 1e12;                    // mean phase in pm
+  const phiEff_pm = phiEff * d / (2 * Math.PI) * 1e12;  // effective phase shift in pm
+  // Phase spread in pm: from contrast loss, Δx_rms ≈ sqrt(−2 ln ξ) × d/(2π)
+  const dphi_pm = xi > 0 && xi < 1
+    ? Math.sqrt(-2 * Math.log(xi)) * d / (2 * Math.PI) * 1e12
+    : 0;
+
+  document.getElementById('infoPanel').innerHTML = `
+  <div class="info-grid">
+    <div class="info-head">Distribution</div>
+    <div class="info-kv"><span class="info-k">type:</span><span class="info-v">${dist}</span></div>
+    <div class="info-kv"><span class="info-k">v₀:</span><span class="info-v">${v0.toFixed(0)} m/s</span></div>
+    ${showSig ? `<div class="info-kv"><span class="info-k">σᵥ:</span><span class="info-v">${sigV.toFixed(0)} m/s</span></div>
+    <div class="info-kv"><span class="info-k">σᵥ/v₀:</span><span class="info-v">${(sigV/v0).toFixed(4)}</span></div>` : ''}
+    <div class="info-head">Interferometer</div>
+    <div class="info-kv"><span class="info-k">2L (flight path):</span><span class="info-v">${(L*1000).toFixed(2)} mm</span></div>
+    <div class="info-kv"><span class="info-k">L (arm):</span><span class="info-v">${(Larm*1000).toFixed(2)} mm</span></div>
+    <div class="info-kv"><span class="info-k">d:</span><span class="info-v">${(d*1e9).toFixed(0)} nm</span></div>
+    <div class="info-kv"><span class="info-k">g:</span><span class="info-v">${g.toFixed(2)} m/s²</span></div>
+    <div class="info-kv"><span class="info-k">k = 2π/d:</span><span class="info-v">${k.toExponential(3)} rad/m</span></div>
+    <div class="info-kv"><span class="info-k">N₀ (Talbot orders at v₀):</span><span class="info-v">${N0}</span></div>
+    <div class="info-kv"><span class="info-k">T_L(v₀) = L_arm/N₀:</span><span class="info-v">${TL0_um.toFixed(4)} μm</span></div>
+    <div class="info-head">Signal &nbsp;(A<sub>amp</sub> + C<sub>dc</sub> = 1,&nbsp; γ = A/C)</div>
+    <div class="info-kv"><span class="info-k">γ input:</span><span class="info-v">${gamma.toFixed(3)}</span></div>
+    <div class="info-kv"><span class="info-k">A<sub>amp</sub>:</span><span class="info-v">${A.toFixed(4)}</span></div>
+    <div class="info-kv"><span class="info-k">C<sub>dc</sub>:</span><span class="info-v">${C.toFixed(4)}</span></div>
+    <div class="info-head">Phase</div>
+    <div class="info-kv"><span class="info-k">φ₀ = g(L/v₀)²:</span><span class="info-v">${phi0_pm.toFixed(2)} pm &nbsp;= ${phi0.toFixed(5)} rad</span></div>
+    <div class="info-kv"><span class="info-k">Δφ_eff (phase shift):</span><span class="info-v">${phiEff_pm.toFixed(4)} pm &nbsp;= ${phiEff.toFixed(5)} rad</span></div>
+    ${dphi_pm > 0 ? `<div class="info-kv"><span class="info-k">Δφ_rms (spread):</span><span class="info-v">${dphi_pm.toFixed(4)} pm</span></div>` : ''}
+    <div class="info-head">Contrast</div>
+    <div class="info-kv"><span class="info-k">ξ (vel. avg. factor):</span><span class="info-v">${xi.toFixed(6)}</span></div>
+    <div class="info-kv"><span class="info-k">γ_eff = γ·ξ:</span><span class="info-v">${gammaEff.toFixed(6)}</span></div>
+  </div>`;
+}
+
+function renderAll() {
+  const res = compute();
+  renderDist(res);
+  renderFringe(res);
+  renderContrast(res);
+  renderTalbot(res);
+  renderInfo(res);
+}
+
+// ── Slider wiring ──────────────────────────────────────────────────────────
+const sliders = [
+  { id: 'slV0',    key: 'v0',    fmt: v => v.toFixed(0),  scale: 1    },
+  { id: 'slSigV',  key: 'sigV',  fmt: v => v.toFixed(0),  scale: 1    },
+  { id: 'slGamma', key: 'gamma', fmt: v => v.toFixed(3),  scale: 1    },
+  { id: 'slL',     key: 'L',     fmt: v => v.toFixed(1),  scale: 1e-3 },  // slider in mm
+  { id: 'slD',     key: 'd',     fmt: v => v.toFixed(0),  scale: 1e-9 },  // slider in nm
+  { id: 'slG',     key: 'g',     fmt: v => v.toFixed(2),  scale: 1    },
+  { id: 'slN0',    key: 'N0',    fmt: v => v.toFixed(0),  scale: 1    },
+];
+sliders.forEach(({ id, key, fmt, scale }) => {
+  const el = document.getElementById(id);
+  const sp = document.getElementById('val' + id.slice(2));
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    state[key] = v * scale;
+    sp.textContent = fmt(v);
+    renderAll();
+  });
+  sp.textContent = fmt(parseFloat(el.value));
+});
+
+function setSigVDisabled(disabled) {
+  const row = document.getElementById('rowSigV');
+  const inp = document.getElementById('slSigV');
+  row.classList.toggle('row-disabled', disabled);
+  inp.disabled = disabled;
+}
+
+// Distribution buttons
+['Delta', 'Gauss', 'Maxwell', 'Tophat'].forEach(name => {
+  document.getElementById('btn' + name).addEventListener('click', () => {
+    state.dist = name.toLowerCase();
+    document.querySelectorAll('.btn-row button').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn' + name).classList.add('active');
+    setSigVDisabled(state.dist === 'delta' || state.dist === 'maxwell');
+    renderAll();
+  });
+});
+
+// Reset button
+document.getElementById('btnReset').addEventListener('click', () => {
+  Object.assign(state, DEFAULTS);
+  // Restore slider positions and display spans
+  sliders.forEach(({ id, key, fmt, scale }) => {
+    const el = document.getElementById(id);
+    const sp = document.getElementById('val' + id.slice(2));
+    const raw = DEFAULTS[key] / scale;   // convert back to slider units
+    el.value = raw;
+    sp.textContent = fmt(raw);
+  });
+  // Restore distribution buttons
+  document.querySelectorAll('.btn-row button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn' + DEFAULTS.dist.charAt(0).toUpperCase() + DEFAULTS.dist.slice(1)).classList.add('active');
+  setSigVDisabled(DEFAULTS.dist === 'delta' || DEFAULTS.dist === 'maxwell');
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
