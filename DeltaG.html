@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&Delta;g Sensitivity &mdash; Muonium Gravity Interferometer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]})"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08080e; color: #ddddee; font-family: 'Consolas', monospace; font-size: 20px; padding: 10px; }
+  h2 { text-align: center; margin-bottom: 6px; font-size: 26px; letter-spacing: 1px; color: #aaccff; }
+  .subtitle { text-align: center; margin-bottom: 10px; font-size: 18px; color: #6688aa; line-height: 1.6; }
+  canvas { display: block; border: 1px solid #333355; }
+  .controls { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .ctrl-col { display: flex; flex-direction: column; gap: 8px; min-width: 420px; }
+  .ctrl-col h3 { font-size: 19px; color: #aaccff; margin-bottom: 2px; }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row label { width: 260px; font-size: 18px; color: #ccccdd; text-align: right; }
+  .slider-row input[type=range] { flex: 1; accent-color: #5588ff; height: 6px; }
+  .slider-row span { width: 200px; text-align: right; font-size: 18px; color: #ffcc88; }
+  hr { border: none; border-top: 1px solid #334; margin: 10px 0; }
+  button { background: #1a1a2e; border: 1px solid #446; color: #ccddff; padding: 5px 14px;
+           cursor: pointer; font-size: 17px; font-family: 'Consolas', monospace; border-radius: 3px; }
+  button:hover { background: #2a2a4e; border-color: #668; }
+  button.active { background: #223355; border-color: #88aadd; color: #ffffff; }
+  #infoPanel { border: 1px solid #333355; padding: 8px 14px; background: #0e0e1a;
+               font-size: 17px; line-height: 1.7; min-width: 320px; max-width: 420px; }
+  .info-grid { display: grid; grid-template-columns: 1fr; gap: 1px; }
+  .info-head { font-weight: bold; color: #aaccff; margin-top: 8px; font-size: 16px;
+               border-top: 1px solid #223; padding-top: 4px; }
+  .info-head:first-child { border-top: none; margin-top: 0; }
+  .info-kv { display: flex; gap: 6px; }
+  .info-k { color: #99aacc; flex-shrink: 0; }
+  .info-v { color: #ffcc88; }
+</style>
+</head>
+<body>
+<h2>Muonium Gravity Interferometer &mdash; &Delta;g Sensitivity</h2>
+<div class="subtitle">
+\[
+\Delta g \approx \frac{1}{2\pi T^2}
+\frac{d}{C\,\sqrt{N_0\,\varepsilon\,\eta^3\,e^{-(t_0+2T)/\tau}}}
+\qquad
+N_0 = R_{\!\text{Mu}}\cdot t
+\qquad
+R_{\!\text{Mu}} = f_{\!\text{conv}}\cdot R_\mu
+\]
+</div>
+
+<div style="display:flex;gap:8px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px">
+  <canvas id="plotCanvas" width="860" height="580"></canvas>
+  <div id="infoPanel">Loading&hellip;</div>
+</div>
+<hr>
+<div class="controls">
+  <div class="ctrl-col">
+    <h3>Interferometer</h3>
+    <div class="slider-row">
+      <label>T &nbsp;(free-flight time)</label>
+      <input type="range" id="sl_T" min="0.1" max="20" step="0.05" value="4.4">
+      <span id="v_T">4.40 &mu;s</span>
+    </div>
+    <div class="slider-row">
+      <label>d &nbsp;(grating period)</label>
+      <input type="range" id="sl_d" min="10" max="1000" step="1" value="100">
+      <span id="v_d">100 nm</span>
+    </div>
+    <div class="slider-row">
+      <label>C &nbsp;(contrast)</label>
+      <input type="range" id="sl_C" min="0.001" max="1" step="0.001" value="0.325">
+      <span id="v_C">0.325</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
+      <span style="color:#99aacc;font-size:17px">Setup:</span>
+      <button id="btn3G" onclick="setGratings(3)">3 Gratings</button>
+      <button id="btn4G" onclick="setGratings(4)" class="active">4 Gratings</button>
+    </div>
+    <div class="slider-row">
+      <label>&eta; &nbsp;(G1–G3 transmission)</label>
+      <input type="range" id="sl_eta" min="0.01" max="1" step="0.005" value="0.35">
+      <span id="v_eta">0.350</span>
+    </div>
+    <div class="slider-row" id="row_eta4">
+      <label>&eta;<sub>4</sub> &nbsp;(G4 transmission)</label>
+      <input type="range" id="sl_eta4" min="0.01" max="1" step="0.005" value="0.5">
+      <span id="v_eta4">0.500</span>
+    </div>
+    <div class="slider-row">
+      <label>&epsilon; &nbsp;(detection efficiency)</label>
+      <input type="range" id="sl_eps" min="0.01" max="1" step="0.005" value="0.75">
+      <span id="v_eps">0.750</span>
+    </div>
+    <div class="slider-row">
+      <label>t<sub>0</sub> &nbsp;(initial delay)</label>
+      <input type="range" id="sl_t0" min="0" max="10" step="0.05" value="0">
+      <span id="v_t0">0.00 &mu;s</span>
+    </div>
+    <div class="slider-row">
+      <label>&tau; &nbsp;(Mu lifetime)</label>
+      <input type="range" id="sl_tau" min="0.5" max="5" step="0.001" value="2.197">
+      <span id="v_tau">2.197 &mu;s</span>
+    </div>
+  </div>
+  <div class="ctrl-col">
+    <h3>Source</h3>
+    <div class="slider-row">
+      <label>R<sub>&mu;</sub> &nbsp;(muon rate)</label>
+      <input type="range" id="sl_Rmu" min="3" max="8" step="0.005" value="6.079">
+      <span id="v_Rmu">1.20 M/s</span>
+    </div>
+    <div class="slider-row">
+      <label>f<sub>conv</sub> &nbsp;(Mu conversion)</label>
+      <input type="range" id="sl_fconv" min="0.001" max="0.5" step="0.001" value="0.082">
+      <span id="v_fconv">8.2%</span>
+    </div>
+    <div class="slider-row">
+      <label>v<sub>0</sub> &nbsp;(mean speed)</label>
+      <input type="range" id="sl_v0" min="100" max="5000" step="25" value="2175">
+      <span id="v_v0">2175 m/s</span>
+    </div>
+    <h3 style="margin-top:4px">Plot range</h3>
+    <div class="slider-row">
+      <label>t<sub>max</sub> &nbsp;(x-axis)</label>
+      <input type="range" id="sl_tmax" min="0" max="4" step="0.01" value="2.699">
+      <span id="v_tmax">500 d</span>
+    </div>
+    <div class="slider-row">
+      <label>Target &Delta;g / g</label>
+      <input type="range" id="sl_prec" min="-6" max="-1" step="0.01" value="-2">
+      <span id="v_prec"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const G_GRAV = 9.80665;   // m s⁻²
+
+const DEF = {
+  T_us:     4.4,
+  d_nm:     100,
+  C:        0.325,
+  eta:      0.35,
+  eta4:     0.5,
+  eps:      0.75,
+  t0_us:    0.0,
+  tau_us:   2.197,
+  Rmu_log:  Math.log10(1.2e6),
+  fconv:    0.082,
+  v0:       2175,
+  tmax_log: Math.log10(500),
+  prec_log: -2,
+  nGratings: 4,
+};
+let p = {...DEF};
+
+// ─── Sliders ─────────────────────────────────────────────────────────────────
+const sliders = [
+  ['sl_T',    'v_T',    'T_us',     v=>`${v.toFixed(2)}\u202f\u03bcs`],
+  ['sl_d',    'v_d',    'd_nm',     v=>`${v.toFixed(0)}\u202fnm`],
+  ['sl_C',    'v_C',    'C',        v=>v.toFixed(3)],
+  ['sl_eta',  'v_eta',  'eta',      v=>v.toFixed(3)],
+  ['sl_eta4', 'v_eta4', 'eta4',     v=>v.toFixed(3)],
+  ['sl_eps',  'v_eps',  'eps',      v=>v.toFixed(3)],
+  ['sl_t0',   'v_t0',   't0_us',    v=>`${v.toFixed(2)}\u202f\u03bcs\u202f=\u202f${(v*1e-6*p.v0*1e3).toFixed(3)}\u202fmm`],
+  ['sl_tau',  'v_tau',  'tau_us',   v=>`${v.toFixed(3)}\u202f\u03bcs`],
+  ['sl_Rmu',  'v_Rmu',  'Rmu_log',  v=>fmtRate(Math.pow(10,v))],
+  ['sl_fconv','v_fconv','fconv',    v=>`${(v*100).toFixed(1)}%`],
+  ['sl_v0',   'v_v0',   'v0',       v=>`${v.toFixed(0)}\u202fm/s`],
+  ['sl_tmax', 'v_tmax', 'tmax_log', v=>`${fmtDays(Math.pow(10,v))}`],
+  ['sl_prec', 'v_prec', 'prec_log', v=>fmtPrecLabel(v)],
+];
+
+const sliderFmts = {};
+for(const [sid,vid,key,fmt] of sliders){
+  sliderFmts[key] = {vid, fmt};
+  const sl=document.getElementById(sid);
+  const vl=document.getElementById(vid);
+  vl.innerHTML = fmt(parseFloat(sl.value));
+  sl.addEventListener('input',()=>{
+    p[key] = parseFloat(sl.value);
+    vl.innerHTML = fmt(p[key]);
+    // v0 change also affects t0 distance display
+    if(key === 'v0') document.getElementById(sliderFmts['t0_us'].vid).innerHTML =
+      sliderFmts['t0_us'].fmt(p.t0_us);
+    update();
+  });
+}
+
+function setGratings(n){
+  p.nGratings = n;
+  document.getElementById('btn3G').classList.toggle('active', n === 3);
+  document.getElementById('btn4G').classList.toggle('active', n === 4);
+  document.getElementById('row_eta4').style.display = n === 4 ? '' : 'none';
+  update();
+}
+
+function fmtRate(r){
+  if(r>=1e6) return `${(r/1e6).toFixed(2)}\u202fM/s`;
+  if(r>=1e3) return `${(r/1e3).toFixed(1)}\u202fk/s`;
+  return `${r.toFixed(0)}\u202f/s`;
+}
+function fmtDays(d){
+  if(d < 1/24)   return `${(d*24*60).toFixed(0)}\u202fmin`;
+  if(d < 1)      return `${(d*24).toFixed(1)}\u202fhr`;
+  if(d < 30)     return `${d.toFixed(1)}\u202fd`;
+  if(d < 365)    return `${(d/7).toFixed(1)}\u202fwk`;
+  return `${(d/365).toFixed(2)}\u202fyr`;
+}
+function fmtDg(v){
+  if(v >= 1)     return `${v.toFixed(3)}\u202fm/s\u00b2`;
+  if(v >= 1e-3)  return `${(v*1e3).toFixed(3)}\u202fmm/s\u00b2`;
+  if(v >= 1e-6)  return `${(v*1e6).toFixed(3)}\u202f\u03bcm/s\u00b2`;
+  return `${v.toExponential(3)}\u202fm/s\u00b2`;
+}
+function fmtPrecLabel(log_v){
+  const v = Math.pow(10, log_v);
+  if(v >= 0.01)  return `${(v*100).toFixed(1)}% of g`;
+  if(v >= 0.001) return `${(v*1e3).toFixed(2)}\u2030 of g`;
+  return `10<sup>${log_v.toFixed(1)}</sup> \u00d7 g`;
+}
+
+// Unicode superscript helper
+function toSup(n){
+  const map='⁰¹²³⁴⁵⁶⁷⁸⁹';
+  return String(n).split('').map(c=>c==='-'?'⁻':map[+c]).join('');
+}
+function yTickLabel(v){
+  const e = Math.round(Math.log10(v));
+  if(e === 0)  return '1';
+  if(e === 1)  return '10';
+  if(e === 2)  return '100';
+  if(e === -1) return '0.1';
+  if(e === -2) return '0.01';
+  return `10${toSup(e)}`;
+}
+
+// ─── Physics ──────────────────────────────────────────────────────────────────
+function coeffK(){
+  // K = Δg × √N₀ = d / (2π T² C √(ε η³ e^{-(t₀+2T)/τ}))
+  const T   = p.T_us   * 1e-6;
+  const d   = p.d_nm   * 1e-9;
+  const tau = p.tau_us * 1e-6;
+  const t0  = p.t0_us  * 1e-6;
+  const expo = Math.exp(-(t0 + 2*T) / tau);
+  const etaFactor = p.nGratings === 4
+    ? Math.pow(p.eta, 3) * p.eta4
+    : Math.pow(p.eta, 3);
+  const inner = p.eps * etaFactor * expo;
+  if(inner <= 0) return Infinity;
+  return d / (2 * Math.PI * T * T * p.C * Math.sqrt(inner));
+}
+
+function deltaG(t_s, R_Mu_per_s){
+  // t_s: elapsed time in seconds; R_Mu in /s
+  if(t_s <= 0 || R_Mu_per_s <= 0) return Infinity;
+  const K = coeffK();
+  return K / Math.sqrt(R_Mu_per_s * t_s);
+}
+
+function timeToReach(dg_target, R_Mu_per_s){
+  // t = (K / dg_target)² / R_Mu   [seconds]
+  const K = coeffK();
+  return (K / dg_target) ** 2 / R_Mu_per_s;
+}
+
+// ─── Rate curves: selected + ½-decade offsets ─────────────────────────────────
+const MULTS  = [0.1, Math.pow(10,-0.5), 1, Math.pow(10,0.5), 10];
+const MLABELS= ['R/10','R/\u221a10','R','R\u00d7\u221a10','R\u00d710'];
+const MCOLS  = ['#2255bb','#44aaff','#ffee55','#ff8844','#cc2222'];
+const MLW    = [1.2, 1.5, 2.5, 1.5, 1.2];
+
+// ─── Plot rendering ───────────────────────────────────────────────────────────
+function renderPlot(){
+  const canvas = document.getElementById('plotCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.fillStyle='#0a0a14'; ctx.fillRect(0,0,W,H);
+
+  const pad = {l:72, r:130, t:26, b:66};
+  const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+
+  const R_Mu  = Math.pow(10, p.Rmu_log) * p.fconv;
+  const K     = coeffK();
+  const xmin_d= 1/1440;  // 1 minute in days
+  const xmax_d= Math.pow(10, p.tmax_log);
+
+  // y-range: span all curves across x range
+  let ylo = Infinity, yhi = -Infinity;
+  MULTS.forEach(m=>{
+    [xmin_d, xmax_d].forEach(t_d=>{
+      const dg = deltaG(t_d*86400, R_Mu*m);
+      if(isFinite(dg) && dg > 0){ ylo=Math.min(ylo,dg); yhi=Math.max(yhi,dg); }
+    });
+  });
+  // extend to include reference lines
+  const prec_dg = Math.pow(10, p.prec_log) * G_GRAV;
+  ylo = Math.min(ylo, prec_dg * 0.5);
+  yhi = Math.max(yhi, prec_dg * 2, G_GRAV * 2);
+  if(!isFinite(ylo)||!isFinite(yhi)){ ylo=1e-3; yhi=1e6; }
+  const ylog_lo = Math.floor(Math.log10(ylo));
+  const ylog_hi = Math.ceil (Math.log10(yhi));
+  const ymin = Math.pow(10, ylog_lo);
+  const ymax = Math.pow(10, ylog_hi);
+
+  const xlog_lo = Math.floor(Math.log10(xmin_d));
+  const xlog_hi = Math.ceil (Math.log10(xmax_d));
+
+  const toX = t_d => pad.l + (Math.log10(t_d)-Math.log10(xmin_d))
+                             /(Math.log10(xmax_d)-Math.log10(xmin_d))*pw;
+  const toY = dg  => {
+    const f = (Math.log10(dg)-ylog_lo)/(ylog_hi-ylog_lo);
+    return pad.t + ph*(1-f);
+  };
+  const inY = dg => dg>=ymin && dg<=ymax;
+
+  // ── Decade grid ──
+  for(let e=ylog_lo; e<=ylog_hi; e++){
+    const y = Math.pow(10,e);
+    ctx.strokeStyle='#1a2535'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(pad.l,toY(y)); ctx.lineTo(pad.l+pw,toY(y)); ctx.stroke();
+    // minor ticks ×2–9
+    ctx.strokeStyle='#111a26'; ctx.lineWidth=0.5;
+    for(let m=2;m<=9;m++){
+      const ym=y*m; if(ym>ymax*1.001) break;
+      ctx.beginPath(); ctx.moveTo(pad.l,toY(ym)); ctx.lineTo(pad.l+pw,toY(ym)); ctx.stroke();
+    }
+  }
+  for(let e=xlog_lo; e<=xlog_hi; e++){
+    const x = Math.pow(10,e);
+    ctx.strokeStyle='#1a2535'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(toX(x),pad.t); ctx.lineTo(toX(x),pad.t+ph); ctx.stroke();
+    ctx.strokeStyle='#111a26'; ctx.lineWidth=0.5;
+    for(let m=2;m<=9;m++){
+      const xm=x*m; if(xm>xmax_d*1.001) break;
+      ctx.beginPath(); ctx.moveTo(toX(xm),pad.t); ctx.lineTo(toX(xm),pad.t+ph); ctx.stroke();
+    }
+  }
+
+  // ── Reference lines: fractions of g ──
+  const gRefs = [
+    [1,    'g'],
+    [0.1,  '10\u207b\u00b9g'],
+    [0.01, '10\u207b\u00b2g'],
+    [1e-3, '10\u207b\u00b3g'],
+    [1e-4, '10\u207b\u2074g'],
+    [1e-5, '10\u207b\u2075g'],
+  ];
+  gRefs.forEach(([f,lbl])=>{
+    const dg = f * G_GRAV;
+    if(!inY(dg)) return;
+    ctx.strokeStyle='rgba(80,140,60,0.3)'; ctx.lineWidth=0.9; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(pad.l,toY(dg)); ctx.lineTo(pad.l+pw,toY(dg)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#4a8040'; ctx.font='15px Consolas'; ctx.textAlign='left';
+    ctx.fillText(lbl, pad.l+3, toY(dg)-3);
+  });
+
+  // ── Target Δg line ──
+  if(inY(prec_dg)){
+    ctx.strokeStyle='rgba(255,220,70,0.75)'; ctx.lineWidth=1.5; ctx.setLineDash([7,3]);
+    ctx.beginPath(); ctx.moveTo(pad.l,toY(prec_dg)); ctx.lineTo(pad.l+pw,toY(prec_dg)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffdd50'; ctx.font='bold 15px Consolas'; ctx.textAlign='left';
+    ctx.fillText(`\u25ba ${fmtDg(prec_dg)}`, pad.l+4, toY(prec_dg)-4);
+  }
+
+  // ── Time reference verticals ──
+  const tRefs = [
+    [1/1440,'1 min'], [1/24,'1 hr'], [1,'1 d'],
+    [7,'1 wk'], [30,'1 mo'], [365,'1 yr'],
+  ];
+  ctx.font='15px Consolas'; ctx.textAlign='center';
+  tRefs.forEach(([td,lbl])=>{
+    if(td<xmin_d || td>xmax_d) return;
+    ctx.strokeStyle='rgba(70,90,120,0.4)'; ctx.lineWidth=0.8; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(toX(td),pad.t); ctx.lineTo(toX(td),pad.t+ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#445566';
+    ctx.fillText(lbl, toX(td), pad.t+ph+28);
+  });
+
+  // ── Sensitivity curves ──
+  const NT = 400;
+  MULTS.forEach((mult,ci)=>{
+    const R_i = R_Mu * mult;
+    if(R_i <= 0) return;
+    ctx.beginPath(); ctx.strokeStyle=MCOLS[ci]; ctx.lineWidth=MLW[ci];
+    let started=false;
+    for(let i=0;i<=NT;i++){
+      const t_d = xmin_d * Math.pow(xmax_d/xmin_d, i/NT);
+      const dg  = deltaG(t_d*86400, R_i);
+      if(!isFinite(dg)||dg<=0){ started=false; ctx.stroke(); ctx.beginPath(); continue; }
+      const x=toX(t_d), y=toY(Math.max(ymin, Math.min(ymax*10, dg)));
+      if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // Label at right edge
+    const dg_r = deltaG(xmax_d*86400, R_i);
+    if(isFinite(dg_r) && inY(dg_r)){
+      ctx.font = ci===2 ? 'bold 16px Consolas' : '16px Consolas';
+      ctx.fillStyle = MCOLS[ci];
+      ctx.textAlign = 'left';
+      ctx.fillText(MLABELS[ci], pad.l+pw+5, toY(dg_r)+4);
+    }
+  });
+
+  // ── Axes ──
+  ctx.strokeStyle='#445566'; ctx.lineWidth=1.2;
+  ctx.beginPath();
+  ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph);
+  ctx.stroke();
+
+  // y tick labels
+  ctx.fillStyle='#8899bb'; ctx.font='16px Consolas'; ctx.textAlign='right';
+  for(let e=ylog_lo; e<=ylog_hi; e++){
+    ctx.fillText(yTickLabel(Math.pow(10,e)), pad.l-4, toY(Math.pow(10,e))+4);
+  }
+
+  // x tick labels (decades)
+  ctx.fillStyle='#8899bb'; ctx.font='16px Consolas'; ctx.textAlign='center';
+  for(let e=xlog_lo; e<=xlog_hi; e++){
+    const x_d = Math.pow(10,e);
+    if(x_d < xmin_d*0.9 || x_d > xmax_d*1.1) continue;
+    let lbl;
+    if(e < 0){
+      const mins = x_d*24*60;
+      lbl = mins >= 60 ? `${(mins/60).toFixed(0)}h` : `${mins.toFixed(0)}m`;
+    } else if(x_d < 10)   lbl = `${x_d.toFixed(0)}d`;
+    else if(x_d < 100)    lbl = `${x_d.toFixed(0)}d`;
+    else if(x_d < 1000)   lbl = `${(x_d/7).toFixed(0)}w`;
+    else                   lbl = `${(x_d/365).toFixed(1)}y`;
+    ctx.fillText(lbl, toX(x_d), pad.t+ph+14);
+  }
+
+  // Axis labels
+  ctx.fillStyle='#8899bb'; ctx.font='17px Consolas'; ctx.textAlign='center';
+  ctx.fillText('time', pad.l+pw/2, H-4);
+  ctx.save(); ctx.translate(13, pad.t+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('\u0394g  (m\u202fs\u207b\u00b2)', 0, 0); ctx.restore();
+
+  // Header line
+  const L_mm = (p.v0 * p.T_us * 1e-6 * 1000).toFixed(2);
+  const etaStr = p.nGratings === 4
+    ? `\u03b7\u202f=\u202f${p.eta.toFixed(2)}  \u03b7\u2084\u202f=\u202f${p.eta4.toFixed(2)}`
+    : `\u03b7\u202f=\u202f${p.eta.toFixed(2)}`;
+  ctx.fillStyle='#88aacc'; ctx.font='16px Consolas'; ctx.textAlign='center';
+  ctx.fillText(
+    `[${p.nGratings}G]  T\u202f=\u202f${p.T_us.toFixed(2)}\u202f\u03bcs  L\u202f\u2248\u202f${L_mm}\u202fmm  `+
+    `d\u202f=\u202f${p.d_nm.toFixed(0)}\u202fnm  C\u202f=\u202f${p.C.toFixed(3)}  `+
+    `${etaStr}  \u03b5\u202f=\u202f${p.eps.toFixed(2)}`,
+    pad.l+pw/2, pad.t-7
+  );
+}
+
+// ─── Info panel ───────────────────────────────────────────────────────────────
+function renderInfo(){
+  const R_Mu  = Math.pow(10, p.Rmu_log) * p.fconv;
+  const R_mu  = Math.pow(10, p.Rmu_log);
+  const K     = coeffK();
+  const T     = p.T_us * 1e-6;
+  const tau   = p.tau_us * 1e-6;
+  const t0    = p.t0_us * 1e-6;
+  const expo  = Math.exp(-(t0 + 2*T) / tau);
+  const L_mm  = (p.v0 * T * 1000).toFixed(2);
+  const prec_dg = Math.pow(10, p.prec_log) * G_GRAV;
+
+  function kv(k,v){
+    return `<div class="info-kv"><span class="info-k">${k}</span><span class="info-v">${v}</span></div>`;
+  }
+
+  // K per √day at each rate
+  const K_day_sel = K / Math.sqrt(R_Mu * 86400);
+
+  let html = `<div class="info-grid">
+    <div class="info-head">Sensitivity coefficient</div>
+    ${kv('K =', K.toExponential(3)+'\u202fm/s\u00b2/\u221acounts')}
+    ${kv('K\u202f/\u202f\u221a(R\u2098\u1d36\u00d71\u202fd) =', fmtDg(K_day_sel)+'\u202f/\u202f\u221aday')}
+    <div class="info-head">Time to reach target: ${fmtDg(prec_dg)}</div>`;
+
+  MULTS.forEach((m,i)=>{
+    const t_s = timeToReach(prec_dg, R_Mu * m);
+    const t_d = t_s / 86400;
+    const col = MCOLS[i];
+    html += `<div class="info-kv"><span class="info-k" style="color:${col}">${MLABELS[i]}:</span>`+
+            `<span class="info-v">${fmtDays(t_d)}</span></div>`;
+  });
+
+  html += `
+    <div class="info-head">Exponential factor</div>
+    ${kv('(t\u2080+2T)/\u03c4 =', `(${p.t0_us.toFixed(2)}+${(2*p.T_us).toFixed(2)})\u202f/\u202f${p.tau_us.toFixed(3)}\u202f\u03bcs`)}
+    ${kv('e\u207b\u207f =', expo.toExponential(4))}
+    <div class="info-head">Source</div>
+    ${kv('R\u03bc =', fmtRate(R_mu))}
+    ${kv('R\u2098\u1d36 = f\u00d7R\u03bc =', fmtRate(R_Mu))}
+    ${kv('R\u2098\u1d36 (per day) =', R_Mu >= 1e6 ? (R_Mu*86400/1e9).toFixed(3)+'\u202fG/d' : (R_Mu*86400/1e6).toFixed(2)+'\u202fM/d')}
+    <div class="info-head">Geometry &amp; Setup</div>
+    ${kv('Gratings:', `${p.nGratings}-grating setup`)}
+    ${kv('\u03b7 (G1\u2013G3) =', p.eta.toFixed(3))}
+    ${p.nGratings===4 ? kv('\u03b74 (G4) =', p.eta4.toFixed(3)) : ''}
+    ${kv('L = v\u2080T =', `${p.v0}\u202f\u00d7\u202f${p.T_us.toFixed(2)}\u202f\u03bcs\u202f\u2248\u202f${L_mm}\u202fmm`)}
+  </div>`;
+
+  document.getElementById('infoPanel').innerHTML = html;
+}
+
+function update(){
+  renderPlot();
+  renderInfo();
+}
+
+update();
+</script>
+</body>
+</html>

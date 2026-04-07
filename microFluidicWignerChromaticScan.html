@@ -120,7 +120,7 @@ T_L(v_0) = \frac{d^2}{\lambda_0},\quad
     <div class="slider-row"><label>f &nbsp;(duty cycle)</label><input type="range" id="sl_f" min="0.05" max="0.95" step="0.01" value="0.5"><span id="v_f">0.50</span></div>
     <div class="slider-row"><label>p<sub>max</sub> &nbsp;(orders |m|,|n|)</label><input type="range" id="sl_Pmax" min="1" max="30" step="1" value="8"><span id="v_Pmax">8</span></div>
     <div class="slider-row"><label>&sigma;<sub>I</sub>(0)/d</label><input type="range" id="sl_sI0" min="0.3" max="30" step="0.1" value="0.5"><span id="v_sI0" style="width:130px">0.50d = 50.0nm</span></div>
-    <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.1" max="30" step="0.1" value="0.5"><span id="v_sc0" style="width:130px">0.50d = 50.0nm</span></div>
+    <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.025" max="30" step="0.025" value="0.5"><span id="v_sc0" style="width:130px">0.50d = 50.0nm</span></div>
     <div class="slider-row"><label>T<sub>L</sub>/R(0) &nbsp;(input curvature)</label><input type="range" id="sl_invR0" min="-0.5" max="0.5" step="0.005" value="0"><span id="v_invR0">0.000</span></div>
     <div class="slider-row"><label>d &nbsp;(grating period)</label><input type="number" id="inp_d" min="1" max="10000" step="1" value="100" style="width:70px;background:#1a1a2e;border:1px solid #446;color:#ffcc88;padding:2px 4px;font-family:Consolas;font-size:15px"><span style="width:55px;font-size:14px;color:#88aacc">nm</span></div>
   </div>
@@ -132,7 +132,7 @@ T_L(v_0) = \frac{d^2}{\lambda_0},\quad
       <button data-l="30">L=30T<sub>L</sub></button>
       <button data-l="770">L=770T<sub>L</sub></button>
     </div>
-    <div class="slider-row"><label>L / T<sub>L</sub> &nbsp;(dial)</label><input type="range" id="sl_Lnorm" min="-1" max="3" step="0.001" value="0"><span id="v_Lnorm" style="width:90px">1.000 TL</span></div>
+    <div class="slider-row"><label>L / T<sub>L</sub> &nbsp;(dial)</label><input type="range" id="sl_Lnorm" min="-1" max="800" step="0.001" value="0"><span id="v_Lnorm" style="width:90px">1.000 TL</span></div>
     <div style="text-align:right;font-size:13px;color:#88aacc;margin:-4px 0 2px" id="vp_Lnorm"></div>
     <div class="btn-row" id="xiBtns">
       <button data-xi="5">&plusmn;5d</button>
@@ -672,7 +672,7 @@ document.getElementById('velDistCanvas').addEventListener('click', e=>{
 function refreshPhysicalSpans(){
   const d = state.d_nm;
   const lam_nm = H_PLANCK / (M_Mu * Math.max(1, state.v0)) * 1e9;
-  const TL_nm  = d * d / lam_nm;  // Talbot length in nm
+  const TL_nm  = 2*d * d / lam_nm;  // Talbot length in nm
   // σ_I and σ_c physical spans
   document.getElementById('v_sI0').textContent = `${state.sI0.toFixed(2)}d = ${(state.sI0*d).toFixed(1)}nm`;
   document.getElementById('v_sc0').textContent = `${state.sc0.toFixed(2)}d = ${(state.sc0*d).toFixed(1)}nm`;
