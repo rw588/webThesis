@@ -414,6 +414,7 @@
   <button class="tab-btn" data-target="panel-micro-wigner">Microfluidic Wigner</button>
   <button class="tab-btn" data-target="panel-chromatic">Chromatic Wigner</button>
   <button class="tab-btn" data-target="panel-velocity">Velocity Distribution</button>
+  <button class="tab-btn" data-target="panel-deltag">&Delta;g Sensitivity</button>
   <button class="tab-btn" data-target="panel-xray">X-ray Budget</button>
   <button class="tab-btn" data-target="panel-flexure">Flexure Design</button>
   <button class="tab-btn" data-target="panel-math">Derivations</button>
@@ -474,6 +475,11 @@
           <div class="card-icon">∫</div>
           <h3>Full Derivation</h3>
           <p>Step-by-step derivation: CSD propagation for GSM beams in the Fresnel limit.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-deltag')">
+          <div class="card-icon">g</div>
+          <h3>&Delta;g Sensitivity</h3>
+          <p>Log-log sensitivity plot of &Delta;g vs. measurement time — sliders for all interferometer and source parameters, 3- and 4-grating modes, and time-to-target readout for five rate curves.</p>
         </div>
         <div class="card" onclick="switchTab('panel-xray')">
           <div class="card-icon">☢</div>
@@ -609,6 +615,26 @@
       <iframe
         src="velocityDistribution.html"
         title="Velocity Distribution &amp; Contrast"
+        scrolling="no"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── DELTA-G SENSITIVITY ────────────────────────── -->
+  <section class="tab-panel" id="panel-deltag">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">DeltaG.html</span>
+        <a href="DeltaG.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="DeltaG.html"
+        title="&Delta;g Sensitivity &mdash; Muonium Gravity Interferometer"
+        loading="lazy"
         scrolling="no"
         allowfullscreen
       ></iframe>
@@ -1043,6 +1069,7 @@ $$
     '#micro':        'panel-micro',
     '#micro-wigner': 'panel-micro-wigner',
     '#velocity':     'panel-velocity',
+    '#deltag':       'panel-deltag',
     '#math':  'panel-math',
     '#refs':  'panel-refs',
   };
