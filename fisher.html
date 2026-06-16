@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fisher Information — Sinusoidal Poisson Model</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #08080e; color: #ddddee;
+  font-family: 'Consolas', monospace; font-size: 13px;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#pageHeader {
+  padding: 7px 14px; border-bottom: 1px solid #223;
+  background: #0a0a18; flex-shrink: 0;
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+#pageHeader h1 { font-size: 16px; color: #aaccff; font-weight: normal; }
+#pageHeader .eq { font-size: 13px; color: #6688aa; }
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── Left panel ─── */
+.left { width: 370px; min-width: 370px; overflow-y: auto; padding: 8px 10px;
+        border-right: 1px solid #1a2233; background: #0a0a14; }
+.sec-head { font-size: 12px; color: #aaccff; letter-spacing: 0.08em; text-transform: uppercase;
+            border-bottom: 1px solid #1a2233; padding-bottom: 3px; margin: 10px 0 6px; }
+.sec-head:first-child { margin-top: 2px; }
+.cr { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+.cr label { width: 150px; font-size: 13px; color: #99aacc; text-align: right; flex-shrink: 0; }
+.cr input[type=range] { flex: 1; accent-color: #5588ff; }
+.cr .val { width: 72px; text-align: right; color: #ffcc88; font-size: 13px; flex-shrink: 0; }
+
+/* ─── Position cards ─── */
+.pos-card {
+  background: #0d0d1c; border: 1px solid #1a2535;
+  border-radius: 3px; padding: 5px 7px; margin-bottom: 5px;
+}
+.pos-card.hidden { display: none; }
+.pos-card-head { font-size: 12px; margin-bottom: 4px;
+                 display: flex; justify-content: space-between; }
+.pos-card .cr { margin-bottom: 3px; }
+.pos-card .cr label { width: 52px; font-size: 12px; }
+.pos-card .cr .val { width: 60px; font-size: 12px; }
+
+.btn-row { display: flex; gap: 5px; margin-top: 6px; }
+button { background: #1a1a2e; border: 1px solid #446; color: #ccddff;
+         padding: 4px 10px; cursor: pointer; font-size: 13px;
+         font-family: 'Consolas', monospace; border-radius: 3px; flex: 1; }
+button:hover { background: #2a2a4e; }
+button.active { background: #223355; border-color: #88aadd; color: #fff; }
+#btnOpt { color: #aaffcc; border-color: #2a5a44; }
+#btnOpt:hover { background: #162a22; }
+#btnOpt.running { color: #ffcc44; border-color: #665522; }
+
+/* ─── Right panel ─── */
+.right { flex: 1; display: flex; flex-direction: column; gap: 5px;
+         padding: 7px; overflow: hidden; min-width: 0; }
+
+/* ─── Info box ─── */
+#infoBox {
+  border: 1px solid #334; background: #0e0e1a;
+  padding: 7px 12px; flex-shrink: 0; border-radius: 2px;
+}
+#infoBox.singular { border-color: #aa2233; background: #160a0e; }
+.info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px 20px; }
+.ik { color: #99aacc; }
+.iv { color: #ffcc88; }
+.iw { color: #ff5555; font-weight: bold; grid-column: 1/-1; margin-top: 3px; }
+.i-ratio-bar { height: 6px; background: #1a2535; border-radius: 3px; margin-top: 2px;
+               grid-column: 1/-1; overflow: hidden; }
+.i-ratio-fill { height: 100%; background: linear-gradient(90deg,#2a7a44,#aa8800,#cc2222);
+                border-radius: 3px; transition: width 0.15s; }
+
+/* ─── Plot boxes ─── */
+.pbox { flex: 1; min-height: 0; border: 1px solid #1a2535; border-radius: 2px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0a0a14; }
+::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="pageHeader">
+  <h1>Fisher Information — Sinusoidal Poisson Model</h1>
+  <span class="eq">λ(ψ) = λ₀ [1 + C·cos(ψ − φ)]  &nbsp;|&nbsp;  θ = (λ₀, C, φ)</span>
+</div>
+
+<div class="main">
+  <!-- ─── LEFT PANEL ─── -->
+  <div class="left">
+    <div class="sec-head">Global parameters</div>
+
+    <div class="cr">
+      <label>C (contrast)</label>
+      <input type="range" id="sl_C" min="0.05" max="0.95" step="0.01" value="0.30">
+      <span class="val" id="v_C">0.30</span>
+    </div>
+    <div class="cr">
+      <label>λ₀ (log₁₀ scale)</label>
+      <input type="range" id="sl_L" min="3" max="6" step="0.01" value="4">
+      <span class="val" id="v_L">10.0 k/s</span>
+    </div>
+    <div class="cr">
+      <label>T_tot (s)</label>
+      <input type="range" id="sl_T" min="1" max="1000" step="1" value="100">
+      <span class="val" id="v_T">100 s</span>
+    </div>
+    <div class="cr">
+      <label>K (positions)</label>
+      <input type="range" id="sl_K" min="3" max="9" step="1" value="4">
+      <span class="val" id="v_K">4</span>
+    </div>
+
+    <div class="sec-head">Measurement positions &amp; weights</div>
+    <div style="font-size:11px;color:#445566;margin-bottom:5px">
+      Weights auto-normalised. T_k = w_k · T_tot
+    </div>
+
+    <div id="posRows"></div>
+
+    <div class="btn-row">
+      <button id="btnUniform">Uniform</button>
+      <button id="btnOpt">Optimise ψ_k</button>
+    </div>
+
+    <div class="sec-head" style="margin-top:10px">Fisher matrix  I  (at φ = 0)</div>
+    <div id="matDisplay" style="font-size:12px;color:#6688aa;line-height:1.6;padding:2px 0"></div>
+  </div>
+
+  <!-- ─── RIGHT PANEL ─── -->
+  <div class="right">
+    <div id="infoBox"><div class="info-grid"><span class="ik">Computing…</span></div></div>
+    <div id="plot1" class="pbox"></div>
+    <div id="plot2" class="pbox"></div>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const MAX_K = 9;
+const state = {
+  C: 0.30, lambda0: 1e4, T_tot: 100, K: 4,
+  psi: Array(MAX_K).fill(0),
+  w:   Array(MAX_K).fill(1.0),
+};
+
+// ─── Math helpers ─────────────────────────────────────────────────────────────
+function det3(M) {
+  return M[0][0]*(M[1][1]*M[2][2]-M[1][2]*M[2][1])
+       - M[0][1]*(M[1][0]*M[2][2]-M[1][2]*M[2][0])
+       + M[0][2]*(M[1][0]*M[2][1]-M[1][1]*M[2][0]);
+}
+function inv3(M) {
+  const d = det3(M);
+  if (Math.abs(d) < 1e-300) return null;
+  return [
+    [ (M[1][1]*M[2][2]-M[1][2]*M[2][1])/d, -(M[0][1]*M[2][2]-M[0][2]*M[2][1])/d,  (M[0][1]*M[1][2]-M[0][2]*M[1][1])/d],
+    [-(M[1][0]*M[2][2]-M[1][2]*M[2][0])/d,  (M[0][0]*M[2][2]-M[0][2]*M[2][0])/d, -(M[0][0]*M[1][2]-M[0][2]*M[1][0])/d],
+    [ (M[1][0]*M[2][1]-M[1][1]*M[2][0])/d, -(M[0][0]*M[2][1]-M[0][1]*M[2][0])/d,  (M[0][0]*M[1][1]-M[0][1]*M[1][0])/d],
+  ];
+}
+// Eigenvalues of 3×3 symmetric matrix, sorted ascending
+function eig3s(M) {
+  const p1 = M[0][1]**2 + M[0][2]**2 + M[1][2]**2;
+  if (p1 < 1e-60) return [M[0][0], M[1][1], M[2][2]].sort((a,b)=>a-b);
+  const q  = (M[0][0]+M[1][1]+M[2][2])/3;
+  const p2 = (M[0][0]-q)**2+(M[1][1]-q)**2+(M[2][2]-q)**2+2*p1;
+  const p  = Math.sqrt(p2/6);
+  const B  = [[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) B[i][j]=(M[i][j]-(i===j?q:0))/p;
+  const r  = Math.max(-1, Math.min(1, det3(B)/2));
+  const phi = Math.acos(r)/3;
+  const e1 = q+2*p*Math.cos(phi);
+  const e3 = q+2*p*Math.cos(phi+2*Math.PI/3);
+  return [e1, 3*q-e1-e3, e3].sort((a,b)=>a-b);
+}
+function condNum(M) {
+  const e = eig3s(M);
+  const mn = Math.abs(e[0]), mx = Math.abs(e[2]);
+  return mn < 1e-300 ? Infinity : mx/mn;
+}
+
+// ─── Fisher computation ───────────────────────────────────────────────────────
+function normWeights(K) {
+  const w = state.w.slice(0,K);
+  const s = w.reduce((a,b)=>a+b, 0);
+  return s > 0 ? w.map(x=>x/s) : w.map(()=>1/K);
+}
+
+function fisher(psiArr, wn, phi) {
+  const {C, lambda0, T_tot} = state;
+  const K = psiArr.length;
+  const I = [[0,0,0],[0,0,0],[0,0,0]];
+  for(let k=0; k<K; k++) {
+    const pp = psiArr[k] - phi;
+    const cp = Math.cos(pp), sp = Math.sin(pp);
+    const lam = lambda0*(1+C*cp);
+    if(lam < 1e-30) continue;
+    const Tk = wn[k]*T_tot;
+    const g = [1+C*cp, lambda0*cp, lambda0*C*sp];
+    for(let a=0;a<3;a++) for(let b=0;b<3;b++) I[a][b] += Tk*g[a]*g[b]/lam;
+  }
+  return I;
+}
+
+// ─── Position card DOM ────────────────────────────────────────────────────────
+const COLS = ['#ff6655','#ff9944','#ffcc44','#88dd55','#44ccaa',
+              '#44aaff','#aa66ff','#ff66cc','#ffaaaa'];
+
+function buildCards() {
+  const container = document.getElementById('posRows');
+  container.innerHTML = '';
+  for(let k=0; k<MAX_K; k++) {
+    const c = COLS[k];
+    const div = document.createElement('div');
+    div.className = 'pos-card' + (k >= state.K ? ' hidden' : '');
+    div.id = `pc${k}`;
+    div.innerHTML = `
+      <div class="pos-card-head">
+        <span style="color:${c}">ψ${k+1}</span>
+        <span id="tk_disp${k}" style="color:#8899bb;font-size:11px"></span>
+      </div>
+      <div class="cr">
+        <label style="color:${c}90">ψ / π</label>
+        <input type="range" id="sl_p${k}" min="0" max="2" step="0.005"
+          value="${(state.psi[k]/Math.PI).toFixed(3)}" style="accent-color:${c}">
+        <span class="val" id="vp${k}"></span>
+      </div>
+      <div class="cr">
+        <label style="color:${c}90">weight</label>
+        <input type="range" id="sl_w${k}" min="0" max="1" step="0.01"
+          value="${state.w[k].toFixed(2)}" style="accent-color:${c}">
+        <span class="val" id="vw${k}"></span>
+      </div>`;
+    container.appendChild(div);
+
+    document.getElementById(`sl_p${k}`).addEventListener('input', function() {
+      state.psi[k] = parseFloat(this.value)*Math.PI;
+      update();
+    });
+    document.getElementById(`sl_w${k}`).addEventListener('input', function() {
+      state.w[k] = parseFloat(this.value);
+      update();
+    });
+  }
+}
+
+function syncCardSliders() {
+  const K = state.K;
+  const wn = normWeights(K);
+  for(let k=0; k<MAX_K; k++) {
+    document.getElementById(`pc${k}`).classList.toggle('hidden', k >= K);
+    document.getElementById(`sl_p${k}`).value = (state.psi[k]/Math.PI).toFixed(3);
+    document.getElementById(`sl_w${k}`).value = state.w[k].toFixed(2);
+    document.getElementById(`vp${k}`).textContent = (state.psi[k]/Math.PI).toFixed(2)+'π';
+    document.getElementById(`vw${k}`).textContent = state.w[k].toFixed(2);
+    if(k < K) {
+      const pct = (wn[k]*100).toFixed(1);
+      const Tk = (wn[k]*state.T_tot).toFixed(1);
+      document.getElementById(`tk_disp${k}`).textContent = `${pct}%  →  ${Tk}s`;
+    }
+  }
+}
+
+// ─── Global sliders ───────────────────────────────────────────────────────────
+function fmtLam(log10v) {
+  const v = Math.pow(10, log10v);
+  if(v >= 1e6) return (v/1e6).toFixed(2)+' M/s';
+  if(v >= 1e3) return (v/1e3).toFixed(1)+' k/s';
+  return v.toFixed(0)+' /s';
+}
+
+function setupGlobalSliders() {
+  document.getElementById('sl_C').addEventListener('input', function() {
+    state.C = parseFloat(this.value);
+    document.getElementById('v_C').textContent = state.C.toFixed(2);
+    update();
+  });
+  document.getElementById('sl_L').addEventListener('input', function() {
+    state.lambda0 = Math.pow(10, parseFloat(this.value));
+    document.getElementById('v_L').textContent = fmtLam(parseFloat(this.value));
+    update();
+  });
+  document.getElementById('sl_T').addEventListener('input', function() {
+    state.T_tot = parseFloat(this.value);
+    document.getElementById('v_T').textContent = state.T_tot.toFixed(0)+' s';
+    update();
+  });
+  document.getElementById('sl_K').addEventListener('input', function() {
+    const nk = parseInt(this.value);
+    if(nk !== state.K) { state.K = nk; resetUniform(); return; }
+    document.getElementById('v_K').textContent = nk;
+    update();
+  });
+  document.getElementById('btnUniform').addEventListener('click', resetUniform);
+  document.getElementById('btnOpt').addEventListener('click', optimise);
+}
+
+function resetUniform() {
+  const K = state.K;
+  for(let k=0; k<MAX_K; k++) {
+    state.psi[k] = (k < K) ? 2*Math.PI*k/K : 0;
+    state.w[k]   = 1.0;
+  }
+  document.getElementById('v_K').textContent = K;
+  syncCardSliders();
+  update();
+}
+
+// ─── Gradient-descent optimiser ───────────────────────────────────────────────
+function optimise() {
+  const btn = document.getElementById('btnOpt');
+  btn.classList.add('running'); btn.textContent = 'Running…';
+
+  setTimeout(() => {
+    const K = state.K;
+    const wn = normWeights(K);
+
+    function cost(psiArr) {
+      const I = fisher(psiArr, wn, 0);
+      const iv = inv3(I);
+      return iv ? iv[2][2] : 1e30;
+    }
+
+    // Multi-start gradient descent
+    let bestCost = Infinity, bestPsi = null;
+    const starts = 5;
+    for(let s=0; s<starts; s++) {
+      let psi = s === 0
+        ? state.psi.slice(0,K)
+        : Array.from({length:K}, (_,i) => Math.random()*2*Math.PI);
+
+      for(let iter=0; iter<600; iter++) {
+        const lr = 0.15 / (1 + 0.008*iter);
+        for(let k=0; k<K; k++) {
+          const h = 1e-4;
+          const pp = [...psi]; pp[k] += h;
+          const pm = [...psi]; pm[k] -= h;
+          const grad = (cost(pp) - cost(pm)) / (2*h);
+          psi[k] -= lr*grad;
+        }
+      }
+
+      const c = cost(psi);
+      if(c < bestCost) { bestCost = c; bestPsi = psi.map(p => ((p%(2*Math.PI))+2*Math.PI)%(2*Math.PI)); }
+    }
+
+    for(let k=0; k<K; k++) state.psi[k] = bestPsi[k];
+    syncCardSliders();
+    update();
+    btn.classList.remove('running'); btn.textContent = 'Optimise ψ_k';
+  }, 10);
+}
+
+// ─── Plots ────────────────────────────────────────────────────────────────────
+const BG   = '#0a0a14';
+const GRID = '#141e2a';
+const FONT = {family:'Consolas', color:'#8899bb'};
+
+function baseLayout(title, xt, yt, extra={}) {
+  return {
+    paper_bgcolor: BG, plot_bgcolor: BG,
+    font: FONT,
+    title: {text: title, font:{size:13,color:'#aaccff'}, x:0.5, xanchor:'center'},
+    xaxis: {title:{text:xt,font:{size:12}}, color:'#8899bb', gridcolor:GRID,
+            zerolinecolor:'#2a3a4a', tickfont:{size:11}, ...extra.xaxis},
+    yaxis: {title:{text:yt,font:{size:12}}, color:'#8899bb', gridcolor:GRID,
+            zerolinecolor:'#2a3a4a', tickfont:{size:11}, ...extra.yaxis},
+    margin: {l:58,r:12,t:34,b:44},
+    showlegend: false,
+    ...extra,
+  };
+}
+
+const piTicks = {
+  tickvals: [0, Math.PI/2, Math.PI, 3*Math.PI/2, 2*Math.PI],
+  ticktext: ['0','π/2','π','3π/2','2π'],
+};
+
+function renderPlot1(psiArr, wn) {
+  const {C, lambda0} = state;
+  const N = 300;
+  const xs = Array.from({length:N}, (_,i) => 2*Math.PI*i/(N-1));
+  const ys = xs.map(x => lambda0*(1+C*Math.cos(x)));
+
+  const traces = [
+    { x:xs, y:ys, type:'scatter', mode:'lines',
+      line:{color:'#4488ff', width:2}, hovertemplate:'ψ=%{x:.3f}<br>λ=%{y:.1f}<extra></extra>' },
+  ];
+
+  // Scatter dots at measurement positions
+  traces.push({
+    x: psiArr,
+    y: psiArr.map(p => lambda0*(1+C*Math.cos(p))),
+    type: 'scatter', mode: 'markers',
+    marker: { color: psiArr.map((_,k)=>COLS[k]), size:10, line:{width:1,color:'#000'} },
+    text: psiArr.map((_,k) => `ψ${k+1} = ${(psiArr[k]/Math.PI).toFixed(2)}π<br>T_k = ${(wn[k]*state.T_tot).toFixed(1)}s`),
+    hovertemplate: '%{text}<extra></extra>',
+  });
+
+  const shapes = psiArr.map((p,k) => ({
+    type:'line', x0:p, x1:p, y0:0, y1:1, yref:'paper',
+    line:{color:COLS[k], width:1.5, dash:'dot'},
+  }));
+
+  Plotly.react('plot1', traces,
+    baseLayout('λ(ψ) — signal with measurement positions',
+      'ψ (rad)', 'λ  (counts / s)',
+      {xaxis:{...piTicks, color:'#8899bb', gridcolor:GRID, zerolinecolor:'#2a3a4a', tickfont:{size:11}}, shapes}),
+    {responsive:true, displayModeBar:false});
+}
+
+function renderPlot2(psiArr, wn) {
+  const N = 250;
+  const phis = Array.from({length:N}, (_,i) => 2*Math.PI*i/(N-1));
+  const crbs  = phis.map(phi => {
+    const I = fisher(psiArr, wn, phi);
+    const iv = inv3(I);
+    return iv ? Math.max(1e-30, iv[2][2]) : NaN;
+  });
+  const naives = phis.map(phi => {
+    const I = fisher(psiArr, wn, phi);
+    return I[2][2] > 0 ? 1/I[2][2] : NaN;
+  });
+
+  const traces = [
+    { x:phis, y:crbs,   type:'scatter', mode:'lines',
+      line:{color:'#c060ff', width:2}, name:'[I⁻¹]₃₃',
+      hovertemplate:'φ=%{x:.3f}<br>[I⁻¹]₃₃=%{y:.2e}<extra></extra>' },
+    { x:phis, y:naives, type:'scatter', mode:'lines',
+      line:{color:'#44ccaa', width:1.5, dash:'dash'}, name:'1/I₃₃',
+      hovertemplate:'φ=%{x:.3f}<br>1/I₃₃=%{y:.2e}<extra></extra>' },
+    // marker at phi=0
+    { x:[0], y:[crbs[0]], type:'scatter', mode:'markers',
+      marker:{color:'#ffee55', size:9}, hovertemplate:'φ=0<br>%{y:.3e}<extra></extra>' },
+  ];
+
+  Plotly.react('plot2', traces,
+    baseLayout('[I⁻¹]₃₃ (purple) and 1/I₃₃ (teal dashed) vs true phase φ',
+      'φ (rad)', 'Variance  (rad²)',
+      { xaxis:{...piTicks, color:'#8899bb', gridcolor:GRID, zerolinecolor:'#2a3a4a', tickfont:{size:11}},
+        yaxis:{type:'log', color:'#8899bb', gridcolor:GRID, zerolinecolor:'#2a3a4a', tickfont:{size:11}},
+        showlegend:true,
+        legend:{bgcolor:'#0d0d1c', bordercolor:'#223', font:{size:11,color:'#aabbcc'}},
+      }),
+    {responsive:true, displayModeBar:false});
+}
+
+// ─── Info box ─────────────────────────────────────────────────────────────────
+function renderInfo(I, Iinv, cond) {
+  const crb33  = Iinv ? Iinv[2][2]  : NaN;
+  const I33    = I[2][2];
+  const naive  = I33 > 0 ? 1/I33 : NaN;
+  const ratio  = (isFinite(crb33) && naive > 0) ? crb33/naive : NaN;
+  const sigma  = isFinite(crb33) && crb33 > 0 ? Math.sqrt(crb33) : NaN;
+  const sigDeg = isFinite(sigma) ? (sigma*180/Math.PI).toFixed(3)+'°' : '—';
+  const singular = !isFinite(cond) || cond > 1e3;
+
+  const fe = (v, d=4) => isFinite(v) ? v.toExponential(d) : '—';
+  const ff = (v, d=4) => isFinite(v) ? v.toFixed(d) : '—';
+
+  const box = document.getElementById('infoBox');
+  box.className = singular ? 'singular' : '';
+
+  const ratioW = isFinite(ratio) ? Math.min(100, (ratio-1)/19*100).toFixed(1) : '0';
+  const ratioCol = !isFinite(ratio) ? '#445' :
+    ratio < 1.5 ? '#2a7a44' : ratio < 5 ? '#aa8800' : '#cc2222';
+
+  box.innerHTML = `
+    <div class="info-grid">
+      <div><span class="ik">[I⁻¹]₃₃ (full CRB): </span><span class="iv">${fe(crb33)} rad²</span></div>
+      <div><span class="ik">1/I₃₃ (naive CRB): </span><span class="iv">${fe(naive)} rad²</span></div>
+      <div><span class="ik">σ_φ = √[I⁻¹]₃₃: </span><span class="iv">${isFinite(sigma)?sigma.toExponential(3)+' rad':' —'} &nbsp; ${sigDeg}</span></div>
+      <div><span class="ik">Nuisance cost ratio: </span><span class="iv" style="color:${ratioCol}">${ff(ratio,4)}</span></div>
+      <div><span class="ik">Condition number: </span><span class="iv" style="color:${singular?'#ff5555':'#ffcc88'}">${isFinite(cond)?cond.toExponential(2):'∞'}</span></div>
+      <div><span class="ik">det(I): </span><span class="iv">${det3(I).toExponential(3)}</span></div>
+      <div class="i-ratio-bar">
+        <div class="i-ratio-fill" style="width:${ratioW}%;background:${ratioCol}88"></div>
+      </div>
+      ${singular ? '<div class="iw">⚠ Near-singular matrix (cond > 10³) — CRB unreliable. Add more distinct positions.</div>' : ''}
+    </div>`;
+
+  // Fisher matrix display
+  const fmt3 = v => {
+    if(Math.abs(v) < 1e-10) return ' 0      ';
+    return v.toExponential(2).padStart(10);
+  };
+  let mat = '';
+  for(let r=0;r<3;r++) {
+    mat += '│ '+I[r].map(fmt3).join('  ')+' │<br>';
+  }
+  document.getElementById('matDisplay').innerHTML = `<span style="color:#445566">┌                                            ┐<br></span>${mat}<span style="color:#445566">└                                            ┘<br></span><span style="color:#556677;font-size:11px">rows/cols: λ₀ · C · φ</span>`;
+}
+
+// ─── Main update ──────────────────────────────────────────────────────────────
+function update() {
+  const K  = state.K;
+  const psiArr = state.psi.slice(0,K);
+  const wn = normWeights(K);
+  syncCardSliders();
+
+  const I    = fisher(psiArr, wn, 0);
+  const Iinv = inv3(I);
+  const cond = condNum(I);
+
+  renderInfo(I, Iinv, cond);
+  renderPlot1(psiArr, wn);
+  renderPlot2(psiArr, wn);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildCards();
+setupGlobalSliders();
+// Initialise display values for global sliders
+document.getElementById('v_C').textContent = state.C.toFixed(2);
+document.getElementById('v_L').textContent = fmtLam(Math.log10(state.lambda0));
+document.getElementById('v_T').textContent = state.T_tot.toFixed(0)+' s';
+document.getElementById('v_K').textContent = state.K;
+resetUniform();
+</script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sequential Bayesian Design — Sinusoidal Poisson</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #08080e; color: #ddddee;
+  font-family: 'Consolas', monospace; font-size: 13px;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#pageHeader {
+  padding: 7px 14px; border-bottom: 1px solid #1a2233;
+  background: #0a0a18; flex-shrink: 0;
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+}
+#pageHeader h1 { font-size: 15px; color: #aaccff; font-weight: normal; }
+#pageHeader .eq { font-size: 12px; color: #6688aa; }
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── Left panel ─── */
+.left {
+  width: 310px; min-width: 310px; overflow-y: auto;
+  padding: 8px 10px; border-right: 1px solid #1a2233;
+  background: #0a0a14;
+}
+.sec-head {
+  font-size: 11px; color: #aaccff; letter-spacing: 0.08em;
+  text-transform: uppercase; border-bottom: 1px solid #1a2233;
+  padding-bottom: 3px; margin: 10px 0 6px;
+}
+.sec-head:first-child { margin-top: 2px; }
+.cr { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+.cr label { width: 130px; font-size: 12px; color: #99aacc; text-align: right; flex-shrink: 0; }
+.cr input[type=range] { flex: 1; accent-color: #5588ff; }
+.cr .val { width: 70px; text-align: right; color: #ffcc88; font-size: 12px; flex-shrink: 0; }
+
+.btn-row { display: flex; gap: 5px; margin: 6px 0; }
+button {
+  background: #1a1a2e; border: 1px solid #446; color: #ccddff;
+  padding: 4px 8px; cursor: pointer; font-size: 12px;
+  font-family: 'Consolas', monospace; border-radius: 3px; flex: 1;
+}
+button:hover { background: #2a2a4e; }
+button.active { background: #223355; border-color: #88aadd; color: #fff; }
+#btn-run-all.active { color: #ff8866; border-color: #884422; background: #1e1008; }
+#btn-compare.active { color: #ffcc44; border-color: #665522; background: #1a1600; }
+
+/* ─── Status box ─── */
+#statusBox {
+  border: 1px solid #1a2535; background: #0e0e1a;
+  padding: 6px 10px; margin-top: 6px; border-radius: 2px;
+  font-size: 12px; line-height: 1.7;
+}
+#statusBox.singular { border-color: #aa2233; background: #160a0e; }
+.sk { color: #99aacc; }
+.sv { color: #ffcc88; }
+.sw { color: #ff5555; font-weight: bold; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; }
+
+/* ─── Right panel ─── */
+.right {
+  flex: 1; display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px; padding: 5px; overflow: hidden; min-width: 0;
+}
+.pbox {
+  min-height: 0; border: 1px solid #1a2535; border-radius: 2px;
+  overflow: hidden;
+}
+#panel-compare { display: none; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0a0a14; }
+::-webkit-scrollbar-thumb { background: #2a3a55; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="pageHeader">
+  <h1>Sequential Bayesian Design — Sinusoidal Poisson</h1>
+  <span class="eq">λ(ψ) = λ₀[1 + C·cos(ψ − φ_g)] &nbsp;|&nbsp; particle filter N=2000 &nbsp;|&nbsp; D-optimal / c-optimal</span>
+</div>
+<div class="main">
+  <!-- ─── Left panel ─── -->
+  <div class="left">
+    <div class="sec-head">True Model</div>
+    <div class="cr">
+      <label>log₁₀ λ₀</label>
+      <input type="range" id="sl-lam0" min="3" max="6" step="0.1" value="4">
+      <span class="val" id="vl-lam0">10⁴</span>
+    </div>
+    <div class="cr">
+      <label>Contrast C</label>
+      <input type="range" id="sl-C" min="0.05" max="0.95" step="0.01" value="0.5">
+      <span class="val" id="vl-C">0.50</span>
+    </div>
+    <div class="cr">
+      <label>True φ_g</label>
+      <input type="range" id="sl-phi" min="0" max="6.2832" step="0.01" value="1.047">
+      <span class="val" id="vl-phi">0.17·2π</span>
+    </div>
+
+    <div class="sec-head">Experiment</div>
+    <div class="cr">
+      <label>Points per step n</label>
+      <input type="range" id="sl-n" min="3" max="9" step="1" value="5">
+      <span class="val" id="vl-n">5</span>
+    </div>
+    <div class="cr">
+      <label>T per point</label>
+      <input type="range" id="sl-T" min="1" max="100" step="1" value="10">
+      <span class="val" id="vl-T">10</span>
+    </div>
+    <div class="cr">
+      <label>Steps (run all)</label>
+      <input type="range" id="sl-runs" min="5" max="200" step="5" value="50">
+      <span class="val" id="vl-runs">50</span>
+    </div>
+    <div class="cr">
+      <label>Speed (steps/s)</label>
+      <input type="range" id="sl-speed" min="1" max="30" step="1" value="5">
+      <span class="val" id="vl-speed">5</span>
+    </div>
+
+    <div class="btn-row">
+      <button id="btn-step">Step</button>
+      <button id="btn-run-all">Run All</button>
+      <button id="btn-reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="btn-compare">Compare D vs c-opt</button>
+    </div>
+
+    <div class="sec-head">Current Estimates</div>
+    <div id="statusBox">
+      <div class="stat-grid" id="stat-grid">
+        <span class="sk">Step</span><span class="sv" id="st-step">0</span>
+        <span class="sk">λ̂₀</span><span class="sv" id="st-lam">—</span>
+        <span class="sk">Ĉ</span><span class="sv" id="st-C">—</span>
+        <span class="sk">φ̂_g</span><span class="sv" id="st-phi">—</span>
+        <span class="sk">σ(λ₀)</span><span class="sv" id="st-slam">—</span>
+        <span class="sk">σ(C)</span><span class="sv" id="st-sC">—</span>
+        <span class="sk">σ(φ_g)</span><span class="sv" id="st-sphi">—</span>
+        <span class="sk">CRB(φ)</span><span class="sv" id="st-crb">—</span>
+        <span class="sk">det(F)</span><span class="sv" id="st-det">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Right panel: 2×2 grid ─── -->
+  <div class="right">
+    <div class="pbox" id="plot-fringe"></div>
+    <div class="pbox" id="plot-params"></div>
+    <div class="pbox" id="plot-fisher"></div>
+    <div class="pbox" id="panel-compare" id="plot-compare"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────
+// Poisson sampler
+// ──────────────────────────────────────────────
+function poissonKnuth(lam) {
+  const L = Math.exp(-lam);
+  let k = 0, p = 1;
+  do { k++; p *= Math.random(); } while (p > L);
+  return k - 1;
+}
+
+function poissonSample(lam) {
+  if (lam <= 0) return 0;
+  if (lam > 50) {
+    const u = Math.random() + 1e-15, v = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    return Math.max(0, Math.round(lam + Math.sqrt(lam) * z));
+  }
+  return poissonKnuth(lam);
+}
+
+// ──────────────────────────────────────────────
+// 3×3 matrix utilities
+// ──────────────────────────────────────────────
+function det3(M) {
+  return M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+       - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+       + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]);
+}
+
+function inv3(M) {
+  const d = det3(M);
+  if (Math.abs(d) < 1e-60) return null;
+  const inv = [[0,0,0],[0,0,0],[0,0,0]];
+  inv[0][0] =  (M[1][1]*M[2][2] - M[1][2]*M[2][1]) / d;
+  inv[0][1] = -(M[0][1]*M[2][2] - M[0][2]*M[2][1]) / d;
+  inv[0][2] =  (M[0][1]*M[1][2] - M[0][2]*M[1][1]) / d;
+  inv[1][0] = -(M[1][0]*M[2][2] - M[1][2]*M[2][0]) / d;
+  inv[1][1] =  (M[0][0]*M[2][2] - M[0][2]*M[2][0]) / d;
+  inv[1][2] = -(M[0][0]*M[1][2] - M[0][2]*M[1][0]) / d;
+  inv[2][0] =  (M[1][0]*M[2][1] - M[1][1]*M[2][0]) / d;
+  inv[2][1] = -(M[0][0]*M[2][1] - M[0][1]*M[2][0]) / d;
+  inv[2][2] =  (M[0][0]*M[1][1] - M[0][1]*M[1][0]) / d;
+  return inv;
+}
+
+function addMat(A, B) {
+  return A.map((row, i) => row.map((v, j) => v + B[i][j]));
+}
+
+function zeroMat() { return [[0,0,0],[0,0,0],[0,0,0]]; }
+
+// ──────────────────────────────────────────────
+// Fisher matrix  θ = (λ₀, C, φ_g)
+// λ(ψ) = λ₀[1 + C cos(ψ − φ_g)]
+// ──────────────────────────────────────────────
+function fisherMatrix(psiArr, weights, par) {
+  const { lam0, C, phi_g } = par;
+  const F = zeroMat();
+  for (let k = 0; k < psiArr.length; k++) {
+    const d = psiArr[k] - phi_g;
+    const cp = Math.cos(d), sp = Math.sin(d);
+    const lam = lam0 * (1 + C * cp);
+    if (lam <= 1e-30) continue;
+    const T = weights[k];
+    const g0 = 1 + C * cp;
+    const g1 = lam0 * cp;
+    const g2 = lam0 * C * sp;
+    const g = [g0, g1, g2];
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        F[i][j] += T * g[i] * g[j] / lam;
+  }
+  return F;
+}
+
+// ──────────────────────────────────────────────
+// D-optimal design  (maximise det F)
+// ──────────────────────────────────────────────
+const NGRID = 360;
+const GRID = Array.from({length: NGRID}, (_, i) => i * 2 * Math.PI / NGRID);
+
+function dOptDesign3(par, T_per) {
+  // Random multi-start coordinate scan
+  let bestDet = -Infinity, bestPsi = [0, 2*Math.PI/3, 4*Math.PI/3];
+  const W = [T_per, T_per, T_per];
+  for (let trial = 0; trial < 8; trial++) {
+    let psi = [Math.random()*2*Math.PI, Math.random()*2*Math.PI, Math.random()*2*Math.PI];
+    for (let pass = 0; pass < 60; pass++) {
+      for (let k = 0; k < 3; k++) {
+        let bDet = -Infinity, bAng = psi[k];
+        for (const g of GRID) {
+          psi[k] = g;
+          const d = det3(fisherMatrix(psi, W, par));
+          if (d > bDet) { bDet = d; bAng = g; }
+        }
+        psi[k] = bAng;
+      }
+    }
+    const d = det3(fisherMatrix(psi, W, par));
+    if (d > bestDet) { bestDet = d; bestPsi = [...psi]; }
+  }
+  return bestPsi;
+}
+
+function dOptDesign(n, par, T_per) {
+  const psi = dOptDesign3(par, T_per);
+  if (n === 3) return psi;
+  const W = () => Array(psi.length).fill(T_per);
+  while (psi.length < n) {
+    let bDet = -Infinity, bAng = 0;
+    for (const g of GRID) {
+      const p2 = [...psi, g];
+      const d = det3(fisherMatrix(p2, W(), par));
+      if (d > bDet) { bDet = d; bAng = g; }
+    }
+    psi.push(bAng);
+  }
+  return psi;
+}
+
+// ──────────────────────────────────────────────
+// c-optimal design  (minimise [F⁻¹]_{φφ} = [F⁻¹]_{22})
+// ──────────────────────────────────────────────
+function cOptDesign3(par, T_per) {
+  let bestCRB = Infinity, bestPsi = [0, 2*Math.PI/3, 4*Math.PI/3];
+  const W = [T_per, T_per, T_per];
+  for (let trial = 0; trial < 8; trial++) {
+    let psi = [Math.random()*2*Math.PI, Math.random()*2*Math.PI, Math.random()*2*Math.PI];
+    for (let pass = 0; pass < 60; pass++) {
+      for (let k = 0; k < 3; k++) {
+        let bCRB = Infinity, bAng = psi[k];
+        for (const g of GRID) {
+          psi[k] = g;
+          const Finv = inv3(fisherMatrix(psi, W, par));
+          if (Finv && Finv[2][2] < bCRB) { bCRB = Finv[2][2]; bAng = g; }
+        }
+        psi[k] = bAng;
+      }
+    }
+    const Finv = inv3(fisherMatrix(psi, W, par));
+    const crb = Finv ? Finv[2][2] : Infinity;
+    if (crb < bestCRB) { bestCRB = crb; bestPsi = [...psi]; }
+  }
+  return bestPsi;
+}
+
+function cOptDesign(n, par, T_per) {
+  const psi = cOptDesign3(par, T_per);
+  if (n === 3) return psi;
+  const W = () => Array(psi.length).fill(T_per);
+  while (psi.length < n) {
+    let bCRB = Infinity, bAng = 0;
+    for (const g of GRID) {
+      const p2 = [...psi, g];
+      const Finv = inv3(fisherMatrix(p2, W(), par));
+      if (Finv && Finv[2][2] < bCRB) { bCRB = Finv[2][2]; bAng = g; }
+    }
+    psi.push(bAng);
+  }
+  return psi;
+}
+
+// ──────────────────────────────────────────────
+// Particle filter
+// ──────────────────────────────────────────────
+const N_PART = 2000;
+
+function boxMuller() {
+  const u = Math.random() + 1e-15, v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function initParticles(par) {
+  const { lam0 } = par;
+  const logMu = Math.log(lam0);
+  const logSig = 0.5;
+  const pts = new Array(N_PART);
+  for (let i = 0; i < N_PART; i++) {
+    pts[i] = {
+      lam0: Math.exp(logMu + logSig * boxMuller()),
+      C:    Math.random(),
+      phi:  Math.random() * 2 * Math.PI,
+      w:    1 / N_PART
+    };
+  }
+  return pts;
+}
+
+function updateParticles(pts, psiArr, counts, T_per) {
+  const N = pts.length;
+  // Log-likelihood for each particle
+  let maxLL = -Infinity;
+  const ll = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    const { lam0, C, phi } = pts[i];
+    let s = 0;
+    for (let k = 0; k < psiArr.length; k++) {
+      const d = psiArr[k] - phi;
+      const lam = lam0 * (1 + C * Math.cos(d)) * T_per;
+      if (lam <= 0) { s = -Infinity; break; }
+      s += counts[k] * Math.log(lam) - lam;
+    }
+    ll[i] = s;
+    if (s > maxLL) maxLL = s;
+  }
+
+  // Normalised weights
+  const w = new Float64Array(N);
+  let wSum = 0;
+  for (let i = 0; i < N; i++) {
+    w[i] = Math.exp(ll[i] - maxLL);
+    wSum += w[i];
+  }
+  for (let i = 0; i < N; i++) w[i] /= wSum;
+
+  // Systematic resampling
+  const cum = new Float64Array(N);
+  cum[0] = w[0];
+  for (let i = 1; i < N; i++) cum[i] = cum[i-1] + w[i];
+  const u0 = Math.random() / N;
+  const idx = new Int32Array(N);
+  let j = 0;
+  for (let i = 0; i < N; i++) {
+    const u = u0 + i / N;
+    while (j < N - 1 && cum[j] < u) j++;
+    idx[i] = j;
+  }
+
+  // Jitter
+  const JL = 0.015, JC = 0.008, JP = 0.008;
+  const out = new Array(N);
+  for (let i = 0; i < N; i++) {
+    const p = pts[idx[i]];
+    out[i] = {
+      lam0: Math.max(1, p.lam0 * Math.exp(JL * boxMuller())),
+      C:    Math.max(0.01, Math.min(0.99, p.C + JC * boxMuller())),
+      phi:  p.phi + JP * boxMuller(),
+      w:    1 / N
+    };
+  }
+  return out;
+}
+
+function particleStats(pts) {
+  const N = pts.length;
+  let sL = 0, sC = 0, sSin = 0, sCos = 0;
+  for (const p of pts) { sL += p.lam0; sC += p.C; sSin += Math.sin(p.phi); sCos += Math.cos(p.phi); }
+  const mL = sL/N, mC = sC/N;
+  const mPhi = Math.atan2(sSin/N, sCos/N);
+  let vL = 0, vC = 0;
+  for (const p of pts) { vL += (p.lam0-mL)**2; vC += (p.C-mC)**2; }
+  const R = Math.sqrt((sSin/N)**2 + (sCos/N)**2);
+  return {
+    mL, mC, mPhi,
+    sL: Math.sqrt(vL/N),
+    sC: Math.sqrt(vC/N),
+    sPhi: Math.sqrt(Math.max(0, -2*Math.log(R + 1e-12)))
+  };
+}
+
+// ──────────────────────────────────────────────
+// Simulation state
+// ──────────────────────────────────────────────
+let ptsD = null;    // D-optimal particle cloud
+let ptsC = null;    // c-optimal particle cloud (compare mode)
+let cumFD = zeroMat();
+let cumFC = zeroMat();
+
+const histD = { steps:[], lam:[], C:[], phi:[], sL:[], sC:[], sPhi:[], detF:[], crbPhi:[], psiLast:[], ctLast:[] };
+const histC = { steps:[], detF:[], crbPhi:[] };
+
+let running = false, runTimer = null;
+
+function getP() {
+  return {
+    lam0:   Math.pow(10, +document.getElementById('sl-lam0').value),
+    C:      +document.getElementById('sl-C').value,
+    phi_g:  +document.getElementById('sl-phi').value,
+    n:      +document.getElementById('sl-n').value  | 0,
+    T_per:  +document.getElementById('sl-T').value,
+    n_runs: +document.getElementById('sl-runs').value | 0,
+    speed:  +document.getElementById('sl-speed').value,
+    compare: document.getElementById('btn-compare').classList.contains('active')
+  };
+}
+
+function resetSim() {
+  stopRun();
+  const p = getP();
+  ptsD = initParticles(p);
+  ptsC = initParticles(p);
+  cumFD = zeroMat(); cumFC = zeroMat();
+  ['steps','lam','C','phi','sL','sC','sPhi','detF','crbPhi','psiLast','ctLast'].forEach(k => histD[k] = []);
+  ['steps','detF','crbPhi'].forEach(k => histC[k] = []);
+  updateStatus(null);
+  renderAll();
+}
+
+function doStep() {
+  const p = getP();
+  const stD = particleStats(ptsD);
+  const estD = { lam0: stD.mL, C: stD.mC, phi_g: stD.mPhi };
+  const psiD = dOptDesign(p.n, estD, p.T_per);
+  const W    = Array(p.n).fill(p.T_per);
+
+  // Sample from true model
+  const cts = psiD.map(psi => {
+    const lam = p.lam0 * (1 + p.C * Math.cos(psi - p.phi_g)) * p.T_per;
+    return poissonSample(Math.max(0, lam));
+  });
+
+  ptsD = updateParticles(ptsD, psiD, cts, p.T_per);
+  cumFD = addMat(cumFD, fisherMatrix(psiD, W, estD));
+
+  const newSt = particleStats(ptsD);
+  const step = histD.steps.length + 1;
+  histD.steps.push(step);
+  histD.lam.push(newSt.mL); histD.sL.push(newSt.sL);
+  histD.C.push(newSt.mC);   histD.sC.push(newSt.sC);
+  histD.phi.push(newSt.mPhi); histD.sPhi.push(newSt.sPhi);
+  histD.psiLast.push([...psiD]); histD.ctLast.push([...cts]);
+  const Finv = inv3(cumFD);
+  histD.detF.push(det3(cumFD));
+  histD.crbPhi.push(Finv ? Finv[2][2] : NaN);
+
+  // c-optimal track (compare mode)
+  if (p.compare) {
+    const stC = particleStats(ptsC);
+    const estC = { lam0: stC.mL, C: stC.mC, phi_g: stC.mPhi };
+    const psiC = cOptDesign(p.n, estC, p.T_per);
+    const ctsC = psiC.map(psi => {
+      const lam = p.lam0 * (1 + p.C * Math.cos(psi - p.phi_g)) * p.T_per;
+      return poissonSample(Math.max(0, lam));
+    });
+    ptsC = updateParticles(ptsC, psiC, ctsC, p.T_per);
+    cumFC = addMat(cumFC, fisherMatrix(psiC, Array(p.n).fill(p.T_per), estC));
+    const FinvC = inv3(cumFC);
+    histC.steps.push(step);
+    histC.detF.push(det3(cumFC));
+    histC.crbPhi.push(FinvC ? FinvC[2][2] : NaN);
+  }
+
+  updateStatus(newSt);
+  renderAll();
+}
+
+function runAll() {
+  if (running) { stopRun(); return; }
+  running = true;
+  document.getElementById('btn-run-all').textContent = 'Stop';
+  document.getElementById('btn-run-all').classList.add('active');
+  const p = getP();
+  let done = 0;
+  function tick() {
+    if (!running || done >= p.n_runs) { stopRun(); return; }
+    doStep(); done++;
+    runTimer = setTimeout(tick, Math.max(10, Math.round(1000 / getP().speed)));
+  }
+  tick();
+}
+
+function stopRun() {
+  running = false;
+  if (runTimer) { clearTimeout(runTimer); runTimer = null; }
+  const btn = document.getElementById('btn-run-all');
+  btn.textContent = 'Run All';
+  btn.classList.remove('active');
+}
+
+// ──────────────────────────────────────────────
+// Status panel
+// ──────────────────────────────────────────────
+function updateStatus(st) {
+  const s = histD.steps.length;
+  document.getElementById('st-step').textContent = s;
+  if (!st) {
+    ['lam','C','phi','slam','sC','sphi','crb','det'].forEach(id => {
+      const el = document.getElementById('st-'+id);
+      if (el) el.textContent = '—';
+    });
+    return;
+  }
+  document.getElementById('st-lam').textContent  = st.mL.toExponential(3);
+  document.getElementById('st-C').textContent    = st.mC.toFixed(4);
+  document.getElementById('st-phi').textContent  = (st.mPhi/(2*Math.PI)).toFixed(4) + '·2π';
+  document.getElementById('st-slam').textContent = st.sL.toExponential(2);
+  document.getElementById('st-sC').textContent   = st.sC.toFixed(4);
+  document.getElementById('st-sphi').textContent = (st.sPhi * 180/Math.PI).toFixed(3) + '°';
+  const crb = histD.crbPhi[histD.crbPhi.length-1];
+  document.getElementById('st-crb').textContent  = isFinite(crb) ? Math.sqrt(crb).toFixed(5)+' rad' : '∞';
+  document.getElementById('st-det').textContent  = histD.detF[histD.detF.length-1].toExponential(3);
+}
+
+// ──────────────────────────────────────────────
+// Plot helpers
+// ──────────────────────────────────────────────
+const BG   = '#08080e', PAPER = '#0a0a14', GC = '#1a2535', TC = '#99aacc', FF = 'Consolas,monospace';
+
+function baseLayout(title, xT, yT) {
+  return {
+    title: { text: title, font: {size:12,color:'#aaccff',family:FF} },
+    xaxis: { title:{text:xT,font:{size:10,color:TC}}, gridcolor:GC, zerolinecolor:'#223344',
+             tickfont:{size:9,color:TC,family:FF}, linecolor:GC },
+    yaxis: { title:{text:yT,font:{size:10,color:TC}}, gridcolor:GC, zerolinecolor:'#223344',
+             tickfont:{size:9,color:TC,family:FF}, linecolor:GC },
+    paper_bgcolor: PAPER, plot_bgcolor: BG,
+    margin: {l:58,r:12,t:28,b:42},
+    font: { family: FF },
+    showlegend: true,
+    legend: { font:{size:9,color:TC,family:FF}, bgcolor:'rgba(0,0,0,0)', x:1, xanchor:'right', y:1 }
+  };
+}
+
+const CFG = { responsive:true, displayModeBar:false };
+
+// ──────────────────────────────────────────────
+// Plot 1 — Fringe
+// ──────────────────────────────────────────────
+function renderFringe() {
+  const p = getP();
+  const psi = Array.from({length:200}, (_,i) => i * 2*Math.PI/200);
+  const lamT = psi.map(x => p.lam0 * (1 + p.C * Math.cos(x - p.phi_g)));
+
+  const traces = [
+    { x:psi, y:lamT, type:'scatter', mode:'lines', name:'True λ(ψ)',
+      line:{color:'#5588ff',width:2} }
+  ];
+
+  if (ptsD && histD.steps.length > 0) {
+    const st = particleStats(ptsD);
+    const lamE = psi.map(x => st.mL * (1 + st.mC * Math.cos(x - st.mPhi)));
+    traces.push({ x:psi, y:lamE, type:'scatter', mode:'lines', name:'Estimated λ̂(ψ)',
+      line:{color:'#ffcc44',width:1.5,dash:'dash'} });
+    // ±1σ band
+    const lamHi = psi.map(x => (st.mL+st.sL)*(1+(st.mC+st.sC)*Math.cos(x-st.mPhi)));
+    const lamLo = psi.map(x => Math.max(0,(st.mL-st.sL)*(1-Math.abs(st.mC-st.sC))));
+    traces.push({
+      x:[...psi,...psi.slice().reverse()], y:[...lamHi,...lamLo.slice().reverse()],
+      type:'scatter', fill:'toself', fillcolor:'rgba(255,200,68,0.07)',
+      line:{width:0}, showlegend:false, hoverinfo:'skip'
+    });
+
+    // Latest measurement positions
+    const lastPsi = histD.psiLast[histD.psiLast.length-1];
+    const lastCts = histD.ctLast[histD.ctLast.length-1];
+    const lamPts  = lastPsi.map(x => p.lam0*(1+p.C*Math.cos(x-p.phi_g))*p.T_per);
+    traces.push({
+      x: lastPsi, y: lastCts,
+      type:'scatter', mode:'markers', name:'Last measurements',
+      marker:{color:'#ff7755',size:7,symbol:'circle'}
+    });
+    traces.push({
+      x: lastPsi, y: lamPts,
+      type:'scatter', mode:'markers', name:'Expected counts',
+      marker:{color:'#aaffcc',size:5,symbol:'cross',opacity:0.7}
+    });
+  }
+
+  const layout = baseLayout('Fringe λ(ψ)', 'ψ (rad)', 'counts / T');
+  layout.xaxis.tickvals  = [0, Math.PI/2, Math.PI, 3*Math.PI/2, 2*Math.PI];
+  layout.xaxis.ticktext  = ['0','π/2','π','3π/2','2π'];
+  layout.xaxis.range     = [0, 2*Math.PI];
+  Plotly.react('plot-fringe', traces, layout, CFG);
+}
+
+// ──────────────────────────────────────────────
+// Plot 2 — Parameter evolution
+// ──────────────────────────────────────────────
+function renderParams() {
+  const p = getP();
+  if (histD.steps.length === 0) {
+    Plotly.react('plot-params', [], baseLayout('Parameter Estimates ±1σ','Step',''), CFG);
+    return;
+  }
+  const s = histD.steps;
+  const sRange = [s[0], s[s.length-1]];
+
+  const tPhi   = s.map((_, i) => histD.phi[i] / (2*Math.PI));
+  const ePhi   = histD.sPhi.map(x => x/(2*Math.PI));
+  const tPhiHi = tPhi.map((v,i) => v + ePhi[i]);
+  const tPhiLo = tPhi.map((v,i) => v - ePhi[i]);
+
+  const tC   = histD.C;
+  const eCHi = tC.map((v,i) => v + histD.sC[i]);
+  const eCLo = tC.map((v,i) => v - histD.sC[i]);
+
+  const traces = [
+    // φ band
+    { x:[...s,...s.slice().reverse()], y:[...tPhiHi,...tPhiLo.slice().reverse()],
+      type:'scatter', fill:'toself', fillcolor:'rgba(170,255,200,0.1)',
+      line:{width:0}, showlegend:false, hoverinfo:'skip' },
+    // φ mean
+    { x:s, y:tPhi, type:'scatter', mode:'lines', name:'φ̂_g / 2π',
+      line:{color:'#aaffcc',width:2} },
+    // True φ
+    { x:sRange, y:[p.phi_g/(2*Math.PI), p.phi_g/(2*Math.PI)],
+      type:'scatter', mode:'lines', name:'True φ/2π',
+      line:{color:'#aaffcc',width:1,dash:'dot'} },
+    // C band
+    { x:[...s,...s.slice().reverse()], y:[...eCHi,...eCLo.slice().reverse()],
+      type:'scatter', fill:'toself', fillcolor:'rgba(255,153,102,0.1)',
+      line:{width:0}, showlegend:false, hoverinfo:'skip' },
+    // C mean
+    { x:s, y:tC, type:'scatter', mode:'lines', name:'Ĉ',
+      line:{color:'#ff9966',width:2} },
+    // True C
+    { x:sRange, y:[p.C, p.C],
+      type:'scatter', mode:'lines', name:'True C',
+      line:{color:'#ff9966',width:1,dash:'dot'} },
+  ];
+
+  const layout = baseLayout('Parameter Estimates ±1σ', 'Step', 'Value');
+  Plotly.react('plot-params', traces, layout, CFG);
+}
+
+// ──────────────────────────────────────────────
+// Plot 3 — Fisher evolution
+// ──────────────────────────────────────────────
+function renderFisher() {
+  if (histD.steps.length === 0) {
+    Plotly.react('plot-fisher', [], baseLayout('Fisher / CRB (log)', 'Step', ''), CFG);
+    return;
+  }
+  const s = histD.steps;
+  const crbSqrt = histD.crbPhi.map(v => isFinite(v) ? Math.sqrt(v) : NaN);
+
+  const traces = [
+    { x:s, y:histD.detF, type:'scatter', mode:'lines', name:'det(F_cum)',
+      line:{color:'#7799ff',width:2}, yaxis:'y' },
+    { x:s, y:crbSqrt, type:'scatter', mode:'lines', name:'√[F⁻¹]_φφ = σ(φ) CRB',
+      line:{color:'#ff6688',width:2,dash:'dash'}, yaxis:'y2' },
+  ];
+
+  const layout = baseLayout('Fisher / CRB (log)', 'Step', 'det(F)');
+  layout.yaxis.type  = 'log';
+  layout.yaxis2 = {
+    title:{text:'CRB σ(φ) [rad]',font:{size:10,color:'#ff6688'}},
+    type:'log', overlaying:'y', side:'right',
+    gridcolor:'rgba(0,0,0,0)', tickfont:{size:9,color:'#ff6688',family:FF}
+  };
+  layout.margin.r = 65;
+  Plotly.react('plot-fisher', traces, layout, CFG);
+}
+
+// ──────────────────────────────────────────────
+// Plot 4 — Compare D vs c-optimal
+// ──────────────────────────────────────────────
+function renderCompare() {
+  const el = document.getElementById('panel-compare');
+  if (!el) return;
+  const p = getP();
+  if (!p.compare || histD.steps.length === 0) {
+    Plotly.react('panel-compare', [], baseLayout('D vs c-optimal CRB','Step','√CRB φ (rad)'), CFG);
+    return;
+  }
+  const s = histD.steps;
+  const crbD = histD.crbPhi.map(v => isFinite(v) ? Math.sqrt(v) : NaN);
+  const crbC = histC.crbPhi.map(v => isFinite(v) ? Math.sqrt(v) : NaN);
+
+  const traces = [
+    { x:s,            y:crbD, type:'scatter', mode:'lines', name:'D-optimal σ(φ)',
+      line:{color:'#7799ff',width:2} },
+    { x:histC.steps,  y:crbC, type:'scatter', mode:'lines', name:'c-optimal σ(φ)',
+      line:{color:'#ff9966',width:2} },
+  ];
+  const layout = baseLayout('D-optimal vs c-optimal: σ(φ) CRB', 'Step', 'σ(φ_g) [rad]');
+  layout.yaxis.type = 'log';
+  Plotly.react('panel-compare', traces, layout, CFG);
+}
+
+function renderAll() {
+  renderFringe();
+  renderParams();
+  renderFisher();
+  renderCompare();
+}
+
+// ──────────────────────────────────────────────
+// Slider wiring
+// ──────────────────────────────────────────────
+function fmtVal(id, v) {
+  if (id === 'lam0') return '10^' + v.toFixed(1);
+  if (id === 'phi')  return (v / (2*Math.PI)).toFixed(3) + '·2π';
+  if (id === 'n' || id === 'runs') return v.toFixed(0);
+  return v.toFixed(2);
+}
+
+window.addEventListener('load', () => {
+  const MODEL_IDS  = ['lam0','C','phi'];
+  const CTRL_IDS   = ['n','T','runs','speed'];
+  const ALL_IDS    = [...MODEL_IDS, ...CTRL_IDS];
+
+  ALL_IDS.forEach(id => {
+    const sl = document.getElementById('sl-'+id);
+    const vl = document.getElementById('vl-'+id);
+    const refresh = () => { vl.textContent = fmtVal(id, +sl.value); };
+    refresh();
+    sl.addEventListener('input', () => {
+      refresh();
+      // Reset on model / experiment changes (not speed/runs)
+      if (id !== 'speed' && id !== 'runs') resetSim();
+    });
+  });
+
+  document.getElementById('btn-step').addEventListener('click', () => { if(!running) doStep(); });
+  document.getElementById('btn-run-all').addEventListener('click', runAll);
+  document.getElementById('btn-reset').addEventListener('click', resetSim);
+
+  document.getElementById('btn-compare').addEventListener('click', () => {
+    const btn = document.getElementById('btn-compare');
+    btn.classList.toggle('active');
+    const show = btn.classList.contains('active');
+    document.getElementById('panel-compare').style.display = show ? '' : 'none';
+    if (show) resetSim(); // restart both tracks from same prior
+  });
+
+  resetSim();
+});
+</script>
+</body>
+</html>

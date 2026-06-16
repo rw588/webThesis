@@ -414,8 +414,6 @@
   <button class="tab-btn" data-target="panel-micro-wigner">Microfluidic Wigner</button>
   <button class="tab-btn" data-target="panel-chromatic">Chromatic Wigner</button>
   <button class="tab-btn" data-target="panel-velocity">Velocity Distribution</button>
-  <button class="tab-btn" data-target="panel-fisher">Fisher / CRB</button>
-  <button class="tab-btn" data-target="panel-fisher-sim">Fisher Simulation</button>
   <button class="tab-btn" data-target="panel-deltag">&Delta;g Sensitivity</button>
   <button class="tab-btn" data-target="panel-xray">X-ray Budget</button>
   <button class="tab-btn" data-target="panel-flexure">Flexure Design</button>
@@ -477,16 +475,6 @@
           <div class="card-icon">∫</div>
           <h3>Full Derivation</h3>
           <p>Step-by-step derivation: CSD propagation for GSM beams in the Fresnel limit.</p>
-        </div>
-        <div class="card" onclick="switchTab('panel-fisher')">
-          <div class="card-icon">𝓘</div>
-          <h3>Fisher / CRB</h3>
-          <p>Fisher information matrix and Cramér-Rao bounds for the sinusoidal Poisson model λ(ψ)=λ₀[1+C·cos(ψ−φ)]. Sliders for K measurement positions and exposure weights, nuisance-parameter cost ratio, optimiser, and CRB vs phase sweep.</p>
-        </div>
-        <div class="card" onclick="switchTab('panel-fisher-sim')">
-          <div class="card-icon">⟳</div>
-          <h3>Fisher Simulation</h3>
-          <p>Sequential Bayesian experimental design: particle-filter inference on λ₀, C, φ_g with D-optimal and c-optimal point selection. Live fringe, parameter evolution, CRB, and D vs c comparison mode.</p>
         </div>
         <div class="card" onclick="switchTab('panel-deltag')">
           <div class="card-icon">g</div>
@@ -627,46 +615,6 @@
       <iframe
         src="velocityDistribution.html"
         title="Velocity Distribution &amp; Contrast"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
-
-  <!-- ─── FISHER / CRB ───────────────────────────────── -->
-  <section class="tab-panel" id="panel-fisher">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">fisher.html</span>
-        <a href="fisher.html" target="_blank">↗ open standalone</a>
-      </div>
-      <iframe
-        src="fisher.html"
-        title="Fisher Information — Sinusoidal Poisson Model"
-        loading="lazy"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
-
-  <!-- ─── FISHER SIMULATION ───────────────────────────── -->
-  <section class="tab-panel" id="panel-fisher-sim">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">fisherSimulation.html</span>
-        <a href="fisherSimulation.html" target="_blank">↗ open standalone</a>
-      </div>
-      <iframe
-        src="fisherSimulation.html"
-        title="Sequential Bayesian Design — Sinusoidal Poisson"
-        loading="lazy"
         scrolling="no"
         allowfullscreen
       ></iframe>
@@ -1121,8 +1069,6 @@ $$
     '#micro':        'panel-micro',
     '#micro-wigner': 'panel-micro-wigner',
     '#velocity':     'panel-velocity',
-    '#fisher':       'panel-fisher',
-    '#fisher-sim':   'panel-fisher-sim',
     '#deltag':       'panel-deltag',
     '#math':  'panel-math',
     '#refs':  'panel-refs',
