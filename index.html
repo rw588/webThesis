@@ -419,6 +419,7 @@
   <button class="tab-btn" data-target="panel-deltag">&Delta;g Sensitivity</button>
   <button class="tab-btn" data-target="panel-xray">X-ray Budget</button>
   <button class="tab-btn" data-target="panel-flexure">Flexure Design</button>
+  <button class="tab-btn" data-target="panel-grating-fringe">Grating Fringe</button>
   <button class="tab-btn" data-target="panel-math">Derivations</button>
   <button class="tab-btn" data-target="panel-refs">References</button>
 </nav>
@@ -502,6 +503,11 @@
           <div class="card-icon">⟂</div>
           <h3>Flexure Design</h3>
           <p>Interactive parallelogram flexure tool — all 6-DOF stiffnesses, piezo coupling, yield limits, actuation offset parasitics, and constraint pass/fail for cryogenic precision positioning.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-grating-fringe')">
+          <div class="card-icon">∿</div>
+          <h3>Grating Fringe Scan</h3>
+          <p>Sinusoidal fringe pattern scanned by a square grating — interactive demo of the sinc visibility reduction: output contrast = C · sinc(f) with sliders for contrast, phase, open fraction, and scan position.</p>
         </div>
         <div class="card" onclick="switchTab('panel-refs')">
           <div class="card-icon">📚</div>
@@ -726,6 +732,26 @@
       <iframe
         src="flexure.html"
         title="Parallelogram Flexure Design Tool"
+        loading="lazy"
+        scrolling="no"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ─── GRATING FRINGE SCAN ───────────────────────── -->
+  <section class="tab-panel" id="panel-grating-fringe">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">gratingFringe.html</span>
+        <a href="gratingFringe.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="gratingFringe.html"
+        title="Sinusoidal Fringe Scanned by Square Grating"
         loading="lazy"
         scrolling="no"
         allowfullscreen
@@ -1124,6 +1150,7 @@ $$
     '#fisher':       'panel-fisher',
     '#fisher-sim':   'panel-fisher-sim',
     '#deltag':       'panel-deltag',
+    '#grating-fringe': 'panel-grating-fringe',
     '#math':  'panel-math',
     '#refs':  'panel-refs',
   };
