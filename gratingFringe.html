@@ -33,9 +33,27 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
   canvas { display: block; border: 1px solid #2a2a3e; }
+
+  /* combined-export row */
+  .combined-export {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: flex-end;
+    margin: 6px 0 12px;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .combined-export span {
+    font-size: 11px;
+    font-family: Consolas, monospace;
+    color: #6688aa;
+  }
+
   .controls {
     display: flex;
     gap: 20px;
@@ -84,6 +102,11 @@
 <div class="canvas-section">
   <canvas id="topCanvas" width="760" height="278"></canvas>
   <canvas id="botCanvas" width="760" height="170"></canvas>
+</div>
+
+<!-- combined-export buttons (added after figExport.js injects per-canvas buttons) -->
+<div class="combined-export" id="combinedExportRow" style="display:none;">
+  <span>Combined figure:</span>
 </div>
 
 <div class="controls">
@@ -204,12 +227,11 @@ function drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, xTickVals, nYTicks) {
   const pw = cvs.width - ML - MR;
   const ph = cvs.height - MT - MB;
 
-  ctx.font       = '10.5px Consolas, monospace';
-  ctx.fillStyle  = '#5a6a7a';
+  ctx.font        = '10.5px Consolas, monospace';
+  ctx.fillStyle   = '#5a6a7a';
   ctx.strokeStyle = 'rgba(74,143,168,0.16)';
-  ctx.lineWidth  = 1;
+  ctx.lineWidth   = 1;
 
-  // Horizontal grid + y labels
   ctx.textAlign = 'right';
   for (let i = 0; i <= nYTicks; i++) {
     const yV = yMin + (yMax - yMin) * i / nYTicks;
@@ -218,7 +240,6 @@ function drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, xTickVals, nYTicks) {
     ctx.fillText(yV.toFixed(2), ML - 5, yC + 3.5);
   }
 
-  // Vertical grid + x labels
   ctx.textAlign = 'center';
   xTickVals.forEach(xV => {
     const xC = cx(cvs, xV, xMin, xMax);
@@ -227,7 +248,6 @@ function drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, xTickVals, nYTicks) {
     ctx.fillText(label, xC, MT + ph + 15);
   });
 
-  // Axis border
   ctx.strokeStyle = '#3a4455';
   ctx.lineWidth   = 1.5;
   ctx.strokeRect(ML, MT, pw, ph);
@@ -261,9 +281,9 @@ function drawCurve(ctx, cvs, xArr, yArr, xMin, xMax, yMin, yMax, color, lw, alph
   const ph = cvs.height - MT - MB;
   ctx.save();
   ctx.beginPath(); ctx.rect(ML, MT, pw, ph); ctx.clip();
-  ctx.strokeStyle  = color;
-  ctx.lineWidth    = lw;
-  ctx.globalAlpha  = alpha ?? 1.0;
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = lw;
+  ctx.globalAlpha = alpha ?? 1.0;
   ctx.beginPath();
   ctx.moveTo(cx(cvs, xArr[0], xMin, xMax), cy(cvs, yArr[0], yMin, yMax));
   for (let i = 1; i < xArr.length; i++)
@@ -318,7 +338,7 @@ function drawLegend(ctx, cvs) {
 
 function drawInfoBox(ctx, cvs, lines) {
   const pw = cvs.width - ML - MR;
-  const bw = 328, bh = lines.length * 16 + 12;
+  const bw = 330, bh = lines.length * 16 + 12;
   const bx = ML + pw - bw - 5;
   const by = MT + 5;
 
@@ -340,79 +360,220 @@ function drawInfoBox(ctx, cvs, lines) {
   lines.forEach((line, i) => ctx.fillText(line, bx + 8, by + 14 + i * 16));
 }
 
-// ── Main render ───────────────────────────────────────────────────────────────
-function render() {
-  const C   = +document.getElementById('slC').value;
-  const phi = +document.getElementById('slPhi').value;
-  const f   = +document.getElementById('slF').value;
-  const x0  = +document.getElementById('slX0').value;
+// ── Panel render functions (accept any ctx/cvs for hi-res export) ─────────────
 
-  document.getElementById('valC').textContent   = C.toFixed(3);
-  document.getElementById('valPhi').textContent = phi.toFixed(3);
-  document.getElementById('valF').textContent   = f.toFixed(3);
-  document.getElementById('valX0').textContent  = x0.toFixed(3);
+function getParams() {
+  return {
+    C:   +document.getElementById('slC').value,
+    phi: +document.getElementById('slPhi').value,
+    f:   +document.getElementById('slF').value,
+    x0:  +document.getElementById('slX0').value,
+  };
+}
 
-  // Compute data arrays
+function renderTopPanel(ctx, cvs, params) {
+  const { C, phi, f, x0 } = params;
+
   const sigArr  = computeSignal(C, phi);
   const gratArr = computeGrating(x0, f);
   const prodArr = new Float64Array(N_SIG);
   for (let i = 0; i < N_SIG; i++) prodArr[i] = sigArr[i] * gratArr[i];
 
-  const TArr    = computeT(C, phi, f);
-  const T_at_x0 = evalT(x0, C, phi, f);
+  const xMin = 0, xMax = N_PERIODS * d;
+  const yMin = -0.1, yMax = 2.35;
 
-  // ── Top panel ──────────────────────────────────────────────────────────────
-  const xMinT = 0, xMaxT = N_PERIODS * d;
-  const yMinT = -0.1, yMaxT = 2.35;
-  const xTicksT = [0, 1, 2, 3, 4];
-
-  drawBackground(ctxT, topCvs);
-  drawGrid(ctxT, topCvs, xMinT, xMaxT, yMinT, yMaxT, xTicksT, 5);
-  drawAxisLabels(ctxT, topCvs,
+  drawBackground(ctx, cvs);
+  drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, [0, 1, 2, 3, 4], 5);
+  drawAxisLabels(ctx, cvs,
     'x / period d', 'Intensity (normalised)',
     'Signal I(x), Grating G(x−x₀), and Product I(x)·G(x−x₀)');
 
-  drawCurve(ctxT, topCvs, xs, sigArr,  xMinT, xMaxT, yMinT, yMaxT, '#4a8fd9', 1.8, 1.0);
-  drawCurve(ctxT, topCvs, xs, gratArr, xMinT, xMaxT, yMinT, yMaxT, '#e05540', 1.5, 0.80);
-  drawCurve(ctxT, topCvs, xs, prodArr, xMinT, xMaxT, yMinT, yMaxT, '#3cb870', 1.5, 0.90);
-  drawLegend(ctxT, topCvs);
+  drawCurve(ctx, cvs, xs, sigArr,  xMin, xMax, yMin, yMax, '#4a8fd9', 1.8, 1.0);
+  drawCurve(ctx, cvs, xs, gratArr, xMin, xMax, yMin, yMax, '#e05540', 1.5, 0.80);
+  drawCurve(ctx, cvs, xs, prodArr, xMin, xMax, yMin, yMax, '#3cb870', 1.5, 0.90);
+  drawLegend(ctx, cvs);
+}
 
-  // ── Bottom panel ───────────────────────────────────────────────────────────
+function renderBotPanel(ctx, cvs, params) {
+  const { C, phi, f, x0 } = params;
+
+  const TArr    = computeT(C, phi, f);
+  const T_at_x0 = evalT(x0, C, phi, f);
+
   const [Tmin, Tmax] = arrayMinMax(TArr);
   const span  = Math.max(Tmax - Tmin, 1e-6);
   const mgn   = Math.max(0.02 * f, 0.005);
   const yMinB = Tmin - mgn;
   const yMaxB = Tmax + span * 0.60 + mgn;
-  const xTicksB = [0, 0.25, 0.5, 0.75, 1.0];
 
-  drawBackground(ctxB, botCvs);
-  drawGrid(ctxB, botCvs, 0, d, yMinB, yMaxB, xTicksB, 4);
-  drawAxisLabels(ctxB, botCvs,
+  drawBackground(ctx, cvs);
+  drawGrid(ctx, cvs, 0, d, yMinB, yMaxB, [0, 0.25, 0.5, 0.75, 1.0], 4);
+  drawAxisLabels(ctx, cvs,
     'Grating position x₀ / period d', 'T(x₀)',
     'Transmitted intensity vs. grating scan position');
 
-  drawCurve(ctxB, botCvs, x0s, TArr, 0, d, yMinB, yMaxB, '#d8d8d8', 2.0, 1.0);
-  drawDot(ctxB, botCvs, x0, T_at_x0, 0, d, yMinB, yMaxB);
+  drawCurve(ctx, cvs, x0s, TArr, 0, d, yMinB, yMaxB, '#d8d8d8', 2.0, 1.0);
+  drawDot(ctx, cvs, x0, T_at_x0, 0, d, yMinB, yMaxB);
 
-  // Info box
   const sincF = sinc(f);
   const C_out = C * sincF;
   const amp_T = Math.abs((C / Math.PI) * Math.sin(Math.PI * f));
   const vis   = f > 1e-9 ? amp_T / f : 0.0;
 
-  drawInfoBox(ctxB, botCvs, [
+  drawInfoBox(ctx, cvs, [
     `sinc(f) = sin(πf)/(πf) = ${sincF.toFixed(4)}`,
     `Input contrast   C = ${C.toFixed(3)}`,
     `Output visibility  = ${vis.toFixed(4)}   =  C·sinc(f) = ${C_out.toFixed(4)}`,
   ]);
 }
 
-// ── Wire up sliders ───────────────────────────────────────────────────────────
+// ── Main render ───────────────────────────────────────────────────────────────
+function render() {
+  const params = getParams();
+  document.getElementById('valC').textContent   = params.C.toFixed(3);
+  document.getElementById('valPhi').textContent = params.phi.toFixed(3);
+  document.getElementById('valF').textContent   = params.f.toFixed(3);
+  document.getElementById('valX0').textContent  = params.x0.toFixed(3);
+
+  renderTopPanel(ctxT, topCvs, params);
+  renderBotPanel(ctxB, botCvs, params);
+}
+
 ['slC', 'slPhi', 'slF', 'slX0'].forEach(id =>
   document.getElementById(id).addEventListener('input', render)
 );
 
 render();
+
+// ── Register hi-res callbacks for figExport.js ────────────────────────────────
+// figExport.js will upgrade the Save/Copy buttons to 3× resolution automatically.
+topCvs._hiResRender = (ctx, cvs) => renderTopPanel(ctx, cvs, getParams());
+botCvs._hiResRender = (ctx, cvs) => renderBotPanel(ctx, cvs, getParams());
 </script>
+
+<!-- figExport.js — adds Save PNG (3×) / Copy / Pop-out to each canvas,
+     and exposes FigExport.getExportCanvas() for the combined export below -->
+<script src="figExport.js"></script>
+
+<script>
+// ── Combined export (both panels stacked, 3× resolution) ─────────────────────
+function buildCombinedCanvas() {
+  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
+  const GAP   = 6; // pixels between panels at original scale
+  const params = getParams();
+
+  const oc = document.createElement('canvas');
+  oc.width  = topCvs.width  * SCALE;
+  oc.height = (topCvs.height + GAP + botCvs.height) * SCALE;
+  const ctx = oc.getContext('2d');
+
+  // dark background fill
+  ctx.fillStyle = '#08080e';
+  ctx.fillRect(0, 0, oc.width, oc.height);
+
+  // top panel
+  ctx.save();
+  ctx.scale(SCALE, SCALE);
+  renderTopPanel(ctx, { width: topCvs.width, height: topCvs.height }, params);
+  ctx.restore();
+
+  // bottom panel, translated down
+  ctx.save();
+  ctx.translate(0, (topCvs.height + GAP) * SCALE);
+  ctx.scale(SCALE, SCALE);
+  renderBotPanel(ctx, { width: botCvs.width, height: botCvs.height }, params);
+  ctx.restore();
+
+  return oc;
+}
+
+function combinedSave() {
+  const oc = buildCombinedCanvas();
+  const a  = document.createElement('a');
+  a.download = 'fringe_combined.png';
+  a.href     = oc.toDataURL('image/png');
+  a.click();
+}
+
+async function combinedCopy() {
+  const oc = buildCombinedCanvas();
+  const msgEl = document.getElementById('combinedMsg');
+  try {
+    const blob = await new Promise(res => oc.toBlob(res, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    flash(msgEl, 'Copied!', '#4caf6e');
+  } catch (_) {
+    const url = oc.toDataURL('image/png');
+    const win = window.open(url, '_blank');
+    if (win) flash(msgEl, 'Opened → right-click to copy', '#ffaa44');
+    else     flash(msgEl, 'Use ⬇ Save instead', '#e05540');
+  }
+}
+
+function combinedPopout() {
+  const oc  = buildCombinedCanvas();
+  const url = oc.toDataURL('image/png');
+  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
+  const W   = Math.min(oc.width / SCALE + 40, screen.availWidth  - 60);
+  const H   = Math.min(oc.height / SCALE + 80, screen.availHeight - 60);
+  const win = window.open('', '_blank', `width=${W},height=${H},resizable=yes,scrollbars=yes`);
+  if (!win) { alert('Pop-out blocked.'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Combined Figure</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#08080e; display:flex; flex-direction:column;
+         align-items:center; padding:16px; gap:10px; }
+  img  { max-width:100%; height:auto; display:block; image-rendering:crisp-edges; }
+  p    { font:11px Consolas,monospace; color:#556677; }
+</style></head>
+<body>
+  <img src="${url}">
+  <p>Right-click → Copy Image &nbsp;|&nbsp; Drag to desktop or slide to export</p>
+</body></html>`);
+  win.document.close();
+}
+
+function flash(el, text, color) {
+  if (!el) return;
+  clearTimeout(el._ft);
+  el.textContent = text; el.style.color = color; el.style.opacity = '1';
+  el._ft = setTimeout(() => { el.style.opacity = '0'; }, 2600);
+}
+
+// Build the combined-export row once figExport.js has finished initialising
+function buildCombinedRow() {
+  const BASE = [
+    'background:#131320', 'border:1px solid #2e3448', 'color:#8899bb',
+    'padding:2px 8px', 'cursor:pointer', 'font-size:11px',
+    'border-radius:2px', 'font-family:Consolas,monospace', 'line-height:1.5',
+  ].join(';');
+
+  function cb(label, title, fn) {
+    const b = document.createElement('button');
+    b.textContent = label; b.title = title; b.style.cssText = BASE;
+    b.addEventListener('mouseenter', () => { b.style.background='#1c1c36'; b.style.color='#ccd8ee'; });
+    b.addEventListener('mouseleave', () => { b.style.background='#131320'; b.style.color='#8899bb'; });
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
+  const row = document.getElementById('combinedExportRow');
+  row.appendChild(cb(`⬇ Combined PNG (${SCALE}×)`, 'Download both panels as one PNG', combinedSave));
+  row.appendChild(cb(`📋 Copy Combined (${SCALE}×)`, 'Copy combined figure to clipboard', combinedCopy));
+  row.appendChild(cb('⤢ Pop out Combined', 'Open combined figure in new window', combinedPopout));
+
+  const msg = document.createElement('span');
+  msg.id = 'combinedMsg';
+  msg.style.cssText = 'font-size:11px;font-family:Consolas,monospace;opacity:0;transition:opacity 0.4s;min-width:88px;';
+  row.appendChild(msg);
+  row.style.display = 'flex';
+}
+
+// Wait for figExport.js to load and settle, then add combined row
+setTimeout(buildCombinedRow, 200);
+</script>
+
 </body>
 </html>
