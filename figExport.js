@@ -54,25 +54,47 @@
   }
 
   function doPopout(canvas) {
-    const ec  = getExportCanvas(canvas);
-    const url = ec.toDataURL('image/png');
-    const W   = Math.min(ec.width  + 40, screen.availWidth  - 60);
-    const H   = Math.min(ec.height + 64, screen.availHeight - 60);
+    const ec    = getExportCanvas(canvas);
+    const url   = ec.toDataURL('image/png');
+    const hiRes = typeof canvas._hiResRender === 'function';
+    // Open window sized to show the image at native CSS pixels (1× not 3×),
+    // so it fills most of the screen rather than appearing microscopic.
+    const dispW = hiRes ? Math.round(ec.width  / EXPORT_SCALE) : ec.width;
+    const dispH = hiRes ? Math.round(ec.height / EXPORT_SCALE) : ec.height;
+    const winW  = Math.min(dispW  + 60, screen.availWidth  - 60);
+    const winH  = Math.min(dispH  + 110, screen.availHeight - 60);
+    const label = canvas.id ? canvas.id : 'Figure';
+    const resTag = hiRes ? ` &nbsp;·&nbsp; ${EXPORT_SCALE}× resolution (${ec.width} × ${ec.height} px)` : '';
     const win = window.open('', '_blank',
-      `width=${W},height=${H},resizable=yes,scrollbars=yes`);
+      `width=${winW},height=${winH},resizable=yes,scrollbars=yes`);
     if (!win) { alert('Pop-out blocked — allow pop-ups for this page.'); return; }
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Figure</title>
+<title>${label}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#08080e; display:flex; flex-direction:column;
-         align-items:center; padding:16px; min-height:100vh; gap:10px; }
-  img  { max-width:100%; height:auto; display:block; image-rendering:crisp-edges; }
-  p    { font:11px Consolas,monospace; color:#556677; }
+  body {
+    background:#07070d;
+    display:flex; flex-direction:column; align-items:center;
+    padding:20px 24px; min-height:100vh; gap:14px; font-family:Consolas,monospace;
+  }
+  h1 { font-size:14px; font-weight:normal; color:#8899aa; letter-spacing:0.08em; }
+  .fig-wrap {
+    border:1px solid #2a3040; padding:4px; background:#09090f;
+    max-width:100%;
+  }
+  img  {
+    display:block; max-width:100%; height:auto;
+    image-rendering:-webkit-optimize-contrast;
+    image-rendering:crisp-edges;
+  }
+  p { font-size:11px; color:#3a4a5a; text-align:center; }
+  .hint { font-size:12px; color:#5a6a7a; }
 </style></head>
 <body>
-  <img src="${url}">
-  <p>Right-click → Copy Image &nbsp;|&nbsp; Drag to desktop or slide to export</p>
+  <h1>${label}${resTag}</h1>
+  <div class="fig-wrap"><img src="${url}" width="${dispW}"></div>
+  <p class="hint">Right-click the image → <em>Copy Image</em> &nbsp;·&nbsp; or drag into a slide / document</p>
+  <p>Zoom: <a href="${url}" target="_blank" style="color:#4a7a9a;text-decoration:none;">open full-size in new tab ↗</a></p>
 </body></html>`);
     win.document.close();
   }

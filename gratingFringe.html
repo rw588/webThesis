@@ -37,7 +37,6 @@
   }
   canvas { display: block; border: 1px solid #2a2a3e; }
 
-  /* combined-export row */
   .combined-export {
     display: flex;
     align-items: center;
@@ -48,11 +47,7 @@
     margin-left: auto;
     margin-right: auto;
   }
-  .combined-export span {
-    font-size: 11px;
-    font-family: Consolas, monospace;
-    color: #6688aa;
-  }
+  .combined-export span { font-size: 11px; font-family: Consolas, monospace; color: #6688aa; }
 
   .controls {
     display: flex;
@@ -61,31 +56,16 @@
     flex-wrap: wrap;
     margin-bottom: 8px;
   }
-  .ctrl-col {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 310px;
-  }
+  .ctrl-col { display: flex; flex-direction: column; gap: 8px; min-width: 310px; }
   .slider-row { display: flex; align-items: center; gap: 6px; }
   .slider-row label {
-    width: 185px;
-    font-size: 13px;
-    color: #ccccdd;
-    text-align: right;
-    flex-shrink: 0;
+    width: 185px; font-size: 13px; color: #ccccdd;
+    text-align: right; flex-shrink: 0;
   }
-  .slider-row input[type=range] {
-    flex: 1;
-    accent-color: #5588ff;
-    min-width: 100px;
-  }
+  .slider-row input[type=range] { flex: 1; accent-color: #5588ff; min-width: 100px; }
   .slider-row .val {
-    width: 58px;
-    text-align: right;
-    font-size: 13px;
-    color: #ffcc88;
-    flex-shrink: 0;
+    width: 58px; text-align: right; font-size: 13px;
+    color: #ffcc88; flex-shrink: 0;
   }
 </style>
 </head>
@@ -100,11 +80,10 @@
 </div>
 
 <div class="canvas-section">
-  <canvas id="topCanvas" width="760" height="278"></canvas>
-  <canvas id="botCanvas" width="760" height="170"></canvas>
+  <canvas id="topCanvas" width="760" height="308"></canvas>
+  <canvas id="botCanvas" width="760" height="208"></canvas>
 </div>
 
-<!-- combined-export buttons (added after figExport.js injects per-canvas buttons) -->
 <div class="combined-export" id="combinedExportRow" style="display:none;">
   <span>Combined figure:</span>
 </div>
@@ -146,8 +125,14 @@ const N_SCAN    = 600;
 const N_PERIODS = 4;
 const TWO_PI    = 2 * Math.PI;
 
-// Plot margins [left, right, top, bottom]
-const ML = 56, MR = 20, MT = 28, MB = 40;
+// Plot margins [left, right, top, bottom]  — generous for publication axes
+const ML = 72, MR = 22, MT = 46, MB = 56;
+// Tick length (major ticks extend outward)
+const TK = 7;
+// Font sizes (scaled by ctx when hi-res rendering)
+const FS_TICK  = 13;   // tick labels
+const FS_LABEL = 15;   // axis labels
+const FS_TITLE = 13.5; // panel title
 
 // ── Canvas references ────────────────────────────────────────────────────────
 const topCvs = document.getElementById('topCanvas');
@@ -207,6 +192,33 @@ function arrayMinMax(arr) {
   return [mn, mx];
 }
 
+// ── Tick generation: returns an array of "nice" values covering [min, max] ────
+function niceTicks(min, max, targetN) {
+  const range = max - min;
+  if (range < 1e-12) return [min];
+  const rough = range / (targetN - 1);
+  const mag   = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm  = rough / mag;
+  const step  = (norm <= 1.5) ? mag : (norm <= 3.5) ? 2 * mag :
+                (norm <= 7.5) ? 5 * mag : 10 * mag;
+  const start = Math.ceil(min / step - 1e-9) * step;
+  const ticks = [];
+  for (let t = start; t <= max + step * 1e-6; t += step)
+    ticks.push(Math.round(t * 1e10) / 1e10); // avoid floating-point creep
+  return ticks;
+}
+
+// Smart number formatter for axis tick labels
+function fmtTick(v) {
+  if (Math.abs(v) < 1e-10) return '0';
+  const av = Math.abs(v);
+  if (Number.isInteger(Math.round(v * 1000) / 1000)) {
+    const dp = av >= 10 ? 0 : av >= 1 ? 1 : av >= 0.1 ? 2 : 3;
+    return v.toFixed(dp);
+  }
+  return v.toPrecision(3);
+}
+
 // ── Canvas coordinate helpers ─────────────────────────────────────────────────
 function cx(cvs, xVal, xMin, xMax) {
   return ML + (xVal - xMin) / (xMax - xMin) * (cvs.width - ML - MR);
@@ -216,68 +228,110 @@ function cy(cvs, yVal, yMin, yMax) {
   return MT + (1.0 - (yVal - yMin) / (yMax - yMin)) * (cvs.height - MT - MB);
 }
 
-// ── Drawing primitives ────────────────────────────────────────────────────────
-function drawBackground(ctx, cvs) {
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
-  ctx.fillStyle = '#090912';
-  ctx.fillRect(ML, MT, cvs.width - ML - MR, cvs.height - MT - MB);
-}
-
-function drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, xTickVals, nYTicks) {
-  const pw = cvs.width - ML - MR;
+// ── Core axes drawing ─────────────────────────────────────────────────────────
+// Draws background, grid, tick marks, tick labels, axis labels, title.
+// xTickVals and yTickVals are explicit arrays of values to tick/grid at.
+function drawAxes(ctx, cvs, xMin, xMax, yMin, yMax,
+                  xTickVals, yTickVals, xLabel, yLabel, title) {
+  const pw = cvs.width  - ML - MR;
   const ph = cvs.height - MT - MB;
 
-  ctx.font        = '10.5px Consolas, monospace';
-  ctx.fillStyle   = '#5a6a7a';
-  ctx.strokeStyle = 'rgba(74,143,168,0.16)';
+  // Full canvas clear
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // Plot-area background
+  ctx.fillStyle = '#09090f';
+  ctx.fillRect(ML, MT, pw, ph);
+
+  // ── Faint grid lines ──────────────────────────────────────────────────────
+  ctx.strokeStyle = 'rgba(74,143,168,0.13)';
   ctx.lineWidth   = 1;
 
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= nYTicks; i++) {
-    const yV = yMin + (yMax - yMin) * i / nYTicks;
+  yTickVals.forEach(yV => {
     const yC = cy(cvs, yV, yMin, yMax);
     ctx.beginPath(); ctx.moveTo(ML, yC); ctx.lineTo(ML + pw, yC); ctx.stroke();
-    ctx.fillText(yV.toFixed(2), ML - 5, yC + 3.5);
-  }
-
-  ctx.textAlign = 'center';
+  });
   xTickVals.forEach(xV => {
     const xC = cx(cvs, xV, xMin, xMax);
     ctx.beginPath(); ctx.moveTo(xC, MT); ctx.lineTo(xC, MT + ph); ctx.stroke();
-    const label = Number.isInteger(xV) ? xV.toFixed(0) : xV.toFixed(2);
-    ctx.fillText(label, xC, MT + ph + 15);
   });
 
-  ctx.strokeStyle = '#3a4455';
-  ctx.lineWidth   = 1.5;
+  // ── Outward tick marks (all four sides) ───────────────────────────────────
+  ctx.strokeStyle = '#5a6878';
+  ctx.lineWidth   = 1.8;
+
+  yTickVals.forEach(yV => {
+    const yC = cy(cvs, yV, yMin, yMax);
+    // left (outward)
+    ctx.beginPath(); ctx.moveTo(ML - TK, yC); ctx.lineTo(ML, yC); ctx.stroke();
+    // right (outward, mirrored)
+    ctx.beginPath(); ctx.moveTo(ML + pw, yC); ctx.lineTo(ML + pw + TK, yC); ctx.stroke();
+  });
+
+  xTickVals.forEach(xV => {
+    const xC = cx(cvs, xV, xMin, xMax);
+    // bottom (outward)
+    ctx.beginPath(); ctx.moveTo(xC, MT + ph); ctx.lineTo(xC, MT + ph + TK); ctx.stroke();
+    // top (outward, mirrored)
+    ctx.beginPath(); ctx.moveTo(xC, MT); ctx.lineTo(xC, MT - TK); ctx.stroke();
+  });
+
+  // ── Tick labels ───────────────────────────────────────────────────────────
+  ctx.fillStyle = '#8898a8';
+  ctx.font      = `${FS_TICK}px Consolas, monospace`;
+
+  // y-axis labels (right-aligned, to the left of left ticks)
+  ctx.textAlign    = 'right';
+  ctx.textBaseline = 'middle';
+  yTickVals.forEach(yV => {
+    const yC = cy(cvs, yV, yMin, yMax);
+    ctx.fillText(fmtTick(yV), ML - TK - 6, yC);
+  });
+
+  // x-axis labels (centred, below bottom ticks)
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'top';
+  xTickVals.forEach(xV => {
+    const xC = cx(cvs, xV, xMin, xMax);
+    const lbl = Number.isInteger(xV) ? xV.toFixed(0) : fmtTick(xV);
+    ctx.fillText(lbl, xC, MT + ph + TK + 4);
+  });
+
+  // ── Axis box border ───────────────────────────────────────────────────────
+  ctx.strokeStyle  = '#4a5870';
+  ctx.lineWidth    = 2;
   ctx.strokeRect(ML, MT, pw, ph);
-}
 
-function drawAxisLabels(ctx, cvs, xLabel, yLabel, title) {
-  const pw = cvs.width - ML - MR;
-  const ph = cvs.height - MT - MB;
+  // ── Axis labels ───────────────────────────────────────────────────────────
+  ctx.fillStyle    = '#9ab8cc';
+  ctx.font         = `${FS_LABEL}px Consolas, monospace`;
+  ctx.textBaseline = 'alphabetic';
 
-  ctx.font      = '12px Consolas, monospace';
-  ctx.fillStyle = '#7a8a9a';
+  // x-axis label (centred below the tick labels)
   ctx.textAlign = 'center';
-  ctx.fillText(xLabel, ML + pw / 2, cvs.height - 4);
+  ctx.fillText(xLabel, ML + pw / 2, cvs.height - 6);
 
+  // y-axis label (rotated 90°, centred on the left)
   ctx.save();
-  ctx.translate(13, MT + ph / 2);
+  ctx.translate(14, MT + ph / 2);
   ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
   ctx.fillText(yLabel, 0, 0);
   ctx.restore();
 
+  // ── Panel title ───────────────────────────────────────────────────────────
   if (title) {
-    ctx.fillStyle = '#9ab0c8';
-    ctx.font      = '11.5px Consolas, monospace';
+    ctx.fillStyle = '#b0c4d8';
+    ctx.font      = `bold ${FS_TITLE}px Consolas, monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(title, ML + pw / 2, MT - 10);
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(title, ML + pw / 2, MT - 18);
   }
 }
 
+// ── Data drawing helpers ──────────────────────────────────────────────────────
 function drawCurve(ctx, cvs, xArr, yArr, xMin, xMax, yMin, yMax, color, lw, alpha) {
-  const pw = cvs.width - ML - MR;
+  const pw = cvs.width  - ML - MR;
   const ph = cvs.height - MT - MB;
   ctx.save();
   ctx.beginPath(); ctx.rect(ML, MT, pw, ph); ctx.clip();
@@ -296,11 +350,11 @@ function drawDot(ctx, cvs, xV, yV, xMin, xMax, yMin, yMax) {
   const xC = cx(cvs, xV, xMin, xMax);
   const yC = cy(cvs, yV, yMin, yMax);
   ctx.beginPath();
-  ctx.arc(xC, yC, 6.5, 0, TWO_PI);
+  ctx.arc(xC, yC, 7, 0, TWO_PI);
   ctx.fillStyle   = '#ff4444';
   ctx.fill();
   ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth   = 1.5;
+  ctx.lineWidth   = 2;
   ctx.stroke();
 }
 
@@ -311,40 +365,42 @@ function drawLegend(ctx, cvs) {
     { color: '#e05540', alpha: 0.80, text: 'G(x−x₀)  [open fraction f]' },
     { color: '#3cb870', alpha: 0.90, text: 'I(x)·G(x−x₀)  (transmitted light)' },
   ];
-  const bw = 286, bh = items.length * 18 + 10;
-  const bx = ML + pw - bw - 5;
-  const by = MT + 5;
+  const lineH = 20, padX = 10, padY = 8;
+  const bw = 295, bh = items.length * lineH + padY * 2 - 2;
+  const bx = ML + pw - bw - 6;
+  const by = MT + 6;
 
   ctx.fillStyle   = 'rgba(9,9,18,0.88)';
-  ctx.strokeStyle = '#3a4455';
-  ctx.lineWidth   = 1;
+  ctx.strokeStyle = '#3a4860';
+  ctx.lineWidth   = 1.2;
   ctx.fillRect(bx, by, bw, bh);
   ctx.strokeRect(bx, by, bw, bh);
 
   items.forEach(({ color, alpha, text }, i) => {
-    const iy = by + 13 + i * 18;
+    const iy = by + padY + (i + 0.5) * lineH;
     ctx.save();
-    ctx.globalAlpha  = alpha;
-    ctx.strokeStyle  = color;
-    ctx.lineWidth    = 2;
-    ctx.beginPath(); ctx.moveTo(bx + 6, iy); ctx.lineTo(bx + 26, iy); ctx.stroke();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(bx + padX, iy); ctx.lineTo(bx + padX + 22, iy); ctx.stroke();
     ctx.restore();
     ctx.fillStyle    = '#c0cede';
-    ctx.font         = '10.5px Consolas, monospace';
+    ctx.font         = `${FS_TICK - 1}px Consolas, monospace`;
     ctx.textAlign    = 'left';
-    ctx.fillText(text, bx + 30, iy + 4);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + padX + 28, iy);
   });
 }
 
 function drawInfoBox(ctx, cvs, lines) {
   const pw = cvs.width - ML - MR;
-  const bw = 330, bh = lines.length * 16 + 12;
-  const bx = ML + pw - bw - 5;
-  const by = MT + 5;
+  const lineH = 17, padX = 10, padY = 8;
+  const bw = 340, bh = lines.length * lineH + padY * 2;
+  const bx = ML + pw - bw - 6;
+  const by = MT + 6;
 
   ctx.fillStyle   = 'rgba(42,32,12,0.90)';
   ctx.strokeStyle = '#957528';
-  ctx.lineWidth   = 1;
+  ctx.lineWidth   = 1.2;
 
   if (ctx.roundRect) {
     ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 4);
@@ -354,13 +410,15 @@ function drawInfoBox(ctx, cvs, lines) {
     ctx.strokeRect(bx, by, bw, bh);
   }
 
-  ctx.fillStyle = '#e8d890';
-  ctx.font      = '11px Consolas, monospace';
-  ctx.textAlign = 'left';
-  lines.forEach((line, i) => ctx.fillText(line, bx + 8, by + 14 + i * 16));
+  ctx.fillStyle    = '#e8d890';
+  ctx.font         = `${FS_TICK - 1}px Consolas, monospace`;
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+  lines.forEach((line, i) =>
+    ctx.fillText(line, bx + padX, by + padY + (i + 1) * lineH - 2));
 }
 
-// ── Panel render functions (accept any ctx/cvs for hi-res export) ─────────────
+// ── Panel render functions (accept any ctx/cvs — used for hi-res export too) ──
 
 function getParams() {
   return {
@@ -380,17 +438,18 @@ function renderTopPanel(ctx, cvs, params) {
   for (let i = 0; i < N_SIG; i++) prodArr[i] = sigArr[i] * gratArr[i];
 
   const xMin = 0, xMax = N_PERIODS * d;
-  const yMin = -0.1, yMax = 2.35;
+  const yMin = -0.15, yMax = 2.4;
+  const xTicks = niceTicks(xMin, xMax, N_PERIODS + 1);
+  const yTicks = [0, 0.5, 1.0, 1.5, 2.0];
 
-  drawBackground(ctx, cvs);
-  drawGrid(ctx, cvs, xMin, xMax, yMin, yMax, [0, 1, 2, 3, 4], 5);
-  drawAxisLabels(ctx, cvs,
-    'x / period d', 'Intensity (normalised)',
-    'Signal I(x), Grating G(x−x₀), and Product I(x)·G(x−x₀)');
+  drawAxes(ctx, cvs, xMin, xMax, yMin, yMax, xTicks, yTicks,
+    'x  /  period  d',
+    'Intensity  (normalised)',
+    'Signal · Grating · Product');
 
-  drawCurve(ctx, cvs, xs, sigArr,  xMin, xMax, yMin, yMax, '#4a8fd9', 1.8, 1.0);
-  drawCurve(ctx, cvs, xs, gratArr, xMin, xMax, yMin, yMax, '#e05540', 1.5, 0.80);
-  drawCurve(ctx, cvs, xs, prodArr, xMin, xMax, yMin, yMax, '#3cb870', 1.5, 0.90);
+  drawCurve(ctx, cvs, xs, sigArr,  xMin, xMax, yMin, yMax, '#4a8fd9', 2.2, 1.0);
+  drawCurve(ctx, cvs, xs, gratArr, xMin, xMax, yMin, yMax, '#e05540', 1.8, 0.80);
+  drawCurve(ctx, cvs, xs, prodArr, xMin, xMax, yMin, yMax, '#3cb870', 1.8, 0.90);
   drawLegend(ctx, cvs);
 }
 
@@ -404,15 +463,17 @@ function renderBotPanel(ctx, cvs, params) {
   const span  = Math.max(Tmax - Tmin, 1e-6);
   const mgn   = Math.max(0.02 * f, 0.005);
   const yMinB = Tmin - mgn;
-  const yMaxB = Tmax + span * 0.60 + mgn;
+  const yMaxB = Tmax + span * 0.62 + mgn;
 
-  drawBackground(ctx, cvs);
-  drawGrid(ctx, cvs, 0, d, yMinB, yMaxB, [0, 0.25, 0.5, 0.75, 1.0], 4);
-  drawAxisLabels(ctx, cvs,
-    'Grating position x₀ / period d', 'T(x₀)',
+  const xTicks = [0, 0.25, 0.5, 0.75, 1.0];
+  const yTicks = niceTicks(yMinB, Tmax + mgn, 5);
+
+  drawAxes(ctx, cvs, 0, d, yMinB, yMaxB, xTicks, yTicks,
+    'Grating scan position  x₀  /  period  d',
+    'T(x₀)',
     'Transmitted intensity vs. grating scan position');
 
-  drawCurve(ctx, cvs, x0s, TArr, 0, d, yMinB, yMaxB, '#d8d8d8', 2.0, 1.0);
+  drawCurve(ctx, cvs, x0s, TArr, 0, d, yMinB, yMaxB, '#d0d8e0', 2.4, 1.0);
   drawDot(ctx, cvs, x0, T_at_x0, 0, d, yMinB, yMaxB);
 
   const sincF = sinc(f);
@@ -421,13 +482,13 @@ function renderBotPanel(ctx, cvs, params) {
   const vis   = f > 1e-9 ? amp_T / f : 0.0;
 
   drawInfoBox(ctx, cvs, [
-    `sinc(f) = sin(πf)/(πf) = ${sincF.toFixed(4)}`,
+    `sinc(f) = sin(πf) / (πf) = ${sincF.toFixed(4)}`,
     `Input contrast   C = ${C.toFixed(3)}`,
-    `Output visibility  = ${vis.toFixed(4)}   =  C·sinc(f) = ${C_out.toFixed(4)}`,
+    `Output visibility  = ${vis.toFixed(4)}   =  C · sinc(f) = ${C_out.toFixed(4)}`,
   ]);
 }
 
-// ── Main render ───────────────────────────────────────────────────────────────
+// ── Main render loop ──────────────────────────────────────────────────────────
 function render() {
   const params = getParams();
   document.getElementById('valC').textContent   = params.C.toFixed(3);
@@ -446,38 +507,32 @@ function render() {
 render();
 
 // ── Register hi-res callbacks for figExport.js ────────────────────────────────
-// figExport.js will upgrade the Save/Copy buttons to 3× resolution automatically.
 topCvs._hiResRender = (ctx, cvs) => renderTopPanel(ctx, cvs, getParams());
 botCvs._hiResRender = (ctx, cvs) => renderBotPanel(ctx, cvs, getParams());
 </script>
 
-<!-- figExport.js — adds Save PNG (3×) / Copy / Pop-out to each canvas,
-     and exposes FigExport.getExportCanvas() for the combined export below -->
 <script src="figExport.js"></script>
 
 <script>
-// ── Combined export (both panels stacked, 3× resolution) ─────────────────────
+// ── Combined export (both panels stacked, hi-res) ─────────────────────────────
 function buildCombinedCanvas() {
-  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
-  const GAP   = 6; // pixels between panels at original scale
+  const SCALE  = (window.FigExport || {}).EXPORT_SCALE || 3;
+  const GAP    = 8;
   const params = getParams();
 
-  const oc = document.createElement('canvas');
+  const oc  = document.createElement('canvas');
   oc.width  = topCvs.width  * SCALE;
   oc.height = (topCvs.height + GAP + botCvs.height) * SCALE;
   const ctx = oc.getContext('2d');
 
-  // dark background fill
   ctx.fillStyle = '#08080e';
   ctx.fillRect(0, 0, oc.width, oc.height);
 
-  // top panel
   ctx.save();
   ctx.scale(SCALE, SCALE);
   renderTopPanel(ctx, { width: topCvs.width, height: topCvs.height }, params);
   ctx.restore();
 
-  // bottom panel, translated down
   ctx.save();
   ctx.translate(0, (topCvs.height + GAP) * SCALE);
   ctx.scale(SCALE, SCALE);
@@ -490,13 +545,11 @@ function buildCombinedCanvas() {
 function combinedSave() {
   const oc = buildCombinedCanvas();
   const a  = document.createElement('a');
-  a.download = 'fringe_combined.png';
-  a.href     = oc.toDataURL('image/png');
-  a.click();
+  a.download = 'fringe_combined.png'; a.href = oc.toDataURL('image/png'); a.click();
 }
 
 async function combinedCopy() {
-  const oc = buildCombinedCanvas();
+  const oc    = buildCombinedCanvas();
   const msgEl = document.getElementById('combinedMsg');
   try {
     const blob = await new Promise(res => oc.toBlob(res, 'image/png'));
@@ -511,25 +564,25 @@ async function combinedCopy() {
 }
 
 function combinedPopout() {
-  const oc  = buildCombinedCanvas();
-  const url = oc.toDataURL('image/png');
   const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
-  const W   = Math.min(oc.width / SCALE + 40, screen.availWidth  - 60);
-  const H   = Math.min(oc.height / SCALE + 80, screen.availHeight - 60);
-  const win = window.open('', '_blank', `width=${W},height=${H},resizable=yes,scrollbars=yes`);
+  const oc    = buildCombinedCanvas();
+  const url   = oc.toDataURL('image/png');
+  const W     = Math.min(topCvs.width + 60, screen.availWidth  - 60);
+  const H     = Math.min(topCvs.height + botCvs.height + 100, screen.availHeight - 60);
+  const win   = window.open('', '_blank', `width=${W},height=${H},resizable=yes,scrollbars=yes`);
   if (!win) { alert('Pop-out blocked.'); return; }
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Combined Figure</title>
+<title>Combined Figure — Fringe Scan</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#08080e; display:flex; flex-direction:column;
-         align-items:center; padding:16px; gap:10px; }
+         align-items:center; padding:20px; gap:12px; min-height:100vh; }
   img  { max-width:100%; height:auto; display:block; image-rendering:crisp-edges; }
-  p    { font:11px Consolas,monospace; color:#556677; }
+  p    { font:11px Consolas,monospace; color:#445566; }
 </style></head>
 <body>
   <img src="${url}">
-  <p>Right-click → Copy Image &nbsp;|&nbsp; Drag to desktop or slide to export</p>
+  <p>Right-click → Copy Image &nbsp;·&nbsp; Or drag to desktop / into a slide</p>
 </body></html>`);
   win.document.close();
 }
@@ -541,8 +594,8 @@ function flash(el, text, color) {
   el._ft = setTimeout(() => { el.style.opacity = '0'; }, 2600);
 }
 
-// Build the combined-export row once figExport.js has finished initialising
 function buildCombinedRow() {
+  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
   const BASE = [
     'background:#131320', 'border:1px solid #2e3448', 'color:#8899bb',
     'padding:2px 8px', 'cursor:pointer', 'font-size:11px',
@@ -558,11 +611,10 @@ function buildCombinedRow() {
     return b;
   }
 
-  const SCALE = (window.FigExport || {}).EXPORT_SCALE || 3;
   const row = document.getElementById('combinedExportRow');
-  row.appendChild(cb(`⬇ Combined PNG (${SCALE}×)`, 'Download both panels as one PNG', combinedSave));
+  row.appendChild(cb(`⬇ Combined (${SCALE}×)`,    'Download both panels as one PNG', combinedSave));
   row.appendChild(cb(`📋 Copy Combined (${SCALE}×)`, 'Copy combined figure to clipboard', combinedCopy));
-  row.appendChild(cb('⤢ Pop out Combined', 'Open combined figure in new window', combinedPopout));
+  row.appendChild(cb('⤢ Pop out Combined',          'Open combined figure in new window',  combinedPopout));
 
   const msg = document.createElement('span');
   msg.id = 'combinedMsg';
@@ -571,7 +623,6 @@ function buildCombinedRow() {
   row.style.display = 'flex';
 }
 
-// Wait for figExport.js to load and settle, then add combined row
 setTimeout(buildCombinedRow, 200);
 </script>
 
