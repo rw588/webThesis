@@ -862,6 +862,18 @@ worker.onmessage=function(e){
   if(pendingCompute) doCompute();
 };
 
+// ─── Physical unit helpers ────────────────────────────────────────────────────
+function fmtLen(nm) {
+  if (nm >= 1e6) return (nm/1e6).toFixed(3)+' mm';
+  if (nm >= 1e3) return (nm/1e3).toPrecision(4)+' μm';
+  if (nm >= 1)   return nm.toPrecision(4)+' nm';
+  return (nm*1e3).toPrecision(3)+' pm';
+}
+function zT_nm() {
+  const lam_nm = H_PLANCK / (M_Mu * Math.max(1, state.v0)) * 1e9;
+  return 2 * state.d_nm * state.d_nm / lam_nm;
+}
+
 // ─── Rendering ────────────────────────────────────────────────────────────────
 // vmax: shared upper bound so both carpets are on the same intensity scale.
 // Each carpet uses min=0, max=vmax, so a uniform microfluidic background
@@ -906,8 +918,8 @@ function renderExtended(canvasId, data, cmap, vmax){
   ctx.textAlign='left';  ctx.fillText(`x=${(-xiHalf).toFixed(0)}d`,3,H-3);
   ctx.textAlign='right'; ctx.fillText(`x=${xiHalf.toFixed(0)}d`,W-3,H-3);
   ctx.save(); ctx.translate(W-3,H-4); ctx.rotate(-Math.PI/2);
-  ctx.textAlign='right'; ctx.fillText(`z=${zmin.toFixed(1)}`,0,0);
-  ctx.textAlign='left';  ctx.fillText(`z=${zmax.toFixed(1)}`,-(H-10),0);
+  ctx.textAlign='right'; ctx.fillText(fmtLen(zmin*zT_nm()),0,0);
+  ctx.textAlign='left';  ctx.fillText(fmtLen(zmax*zT_nm()),-(H-10),0);
   ctx.restore();
 }
 
@@ -974,7 +986,7 @@ function renderBeam(){
   // Labels
   ctx.fillStyle='#ffffffaa'; ctx.font='13px Consolas';
   ctx.save(); ctx.translate(W-3,H-4); ctx.rotate(-Math.PI/2);
-  ctx.textAlign='right'; ctx.fillText(`z=\u2212${LNorm.toFixed(1)}`,0,0);
+  ctx.textAlign='right'; ctx.fillText(`z=\u2212${fmtLen(LNorm*zT_nm())}`,0,0);
   ctx.textAlign='left';  ctx.fillText('z=0',-(H-10),0);
   ctx.restore();
 }
@@ -1049,7 +1061,7 @@ function renderSlice(){
 
   // Title above plot
   ctx.textAlign='center'; ctx.fillStyle='#ccddee';
-  ctx.fillText(`Slice  z/T\u1d38 = ${state.zsl.toFixed(2)}`, pad.l+pw/2, pad.t-6);
+  ctx.fillText(`Slice  z = ${fmtLen(state.zsl*zT_nm())}`, pad.l+pw/2, pad.t-6);
 
   // Legend below x-axis ticks
   ctx.font='13px Consolas'; ctx.textAlign='left';
@@ -1128,8 +1140,8 @@ function renderContrast(){
   ctx.fillText('1',pad.l-3,pad.t+4);
   ctx.fillText('0',pad.l-3,pad.t+ph);
   ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
-  ctx.textAlign='left';  ctx.fillText(zmin.toFixed(1),pad.l,H-4);
-  ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} T_L`,pad.l+pw,H-4);
+  ctx.textAlign='left';  ctx.fillText(fmtLen(zmin*zT_nm()),pad.l,H-4);
+  ctx.textAlign='right'; ctx.fillText(fmtLen(zmax*zT_nm()),pad.l+pw,H-4);
   ctx.textAlign='center';
   ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
 
@@ -1155,12 +1167,13 @@ function renderInfo(){
     ${kv('v<sub>0</sub>:', `${state.v0.toFixed(0)} m/s`)}
     ${kv('&sigma;<sub>v</sub>:', `${state.sigV.toFixed(0)} m/s &nbsp;(analytical Gaussian damping)`)}
     ${kv('&lambda;<sub>dB</sub>(v<sub>0</sub>):', `${(lambdaDB(state.v0)*1e9).toFixed(4)} nm`)}
-    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}T<sub>L</sub>)</div>
+    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}&thinsp;T<sub>L</sub> = ${fmtLen(state.LNorm*zT_nm())})</div>
     ${kv('f =', state.f.toFixed(2))}
     ${kv('p<sub>max</sub> =', state.Pmax)}
     ${kv('&sigma;<sub>I</sub>(0)/d =', state.sI0.toFixed(2))}
     ${kv('&sigma;<sub>c</sub>(0)/d =', state.sc0.toFixed(2))}
     ${kv('T<sub>L</sub>/R(0) =', state.invR0.toFixed(3))}
+    ${kv('T<sub>L</sub>(v<sub>0</sub>) =', fmtLen(zT_nm()))}
     <div class="info-head">GSM beam propagated to grating</div>
     ${kv('&sigma;<sub>I</sub>(L)/d =', sIL.toFixed(4))}
     ${kv('&sigma;<sub>c</sub>(L)/d =', sCL.toFixed(4))}
@@ -1172,10 +1185,10 @@ function renderInfo(){
     ${kv('&sigma;<sub>eff</sub>(z<sub>max</sub>)/d =', sig_rep.toFixed(4))}
     ${kv('S<sub>max</sub> = 3&sigma;+&xi; =', `3&times;${sig_rep.toFixed(2)}+${xiHalf} = ${S_max} &nbsp;(${S_hi-S_lo+1} srcs)`)}
     <div class="info-head">View</div>
-    ${kv('z:', `[${state.zmin.toFixed(1)},&thinsp;${state.zmax.toFixed(1)}] T<sub>L</sub>`)}
+    ${kv('z:', `[${fmtLen(state.zmin*zT_nm())},&thinsp;${fmtLen(state.zmax*zT_nm())}]`)}
     ${kv('x:', `&plusmn;${state.xiHalf}d`)}
-    ${kv('slice:', `z=${state.zsl.toFixed(2)} T<sub>L</sub>`)}
-    <div class="info-head">Contrast at slice z = ${state.zsl.toFixed(2)} T<sub>L</sub></div>
+    ${kv('slice:', `z = ${fmtLen(state.zsl*zT_nm())}`)}
+    <div class="info-head">Contrast at slice z = ${fmtLen(state.zsl*zT_nm())}</div>
     ${kv('C (microfluidic) =', lastSliceContrast.mf!==null ? lastSliceContrast.mf.toFixed(4) : '&mdash;')}
     ${kv('C (single src) =',   lastSliceContrast.ss!==null ? lastSliceContrast.ss.toFixed(4) : '&mdash;')}
   </div>`;

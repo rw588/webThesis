@@ -101,6 +101,12 @@ A(z) = \tfrac{(\lambda z)^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
     <div class="slider-row"><label>&sigma;<sub>I</sub>(0)/d</label><input type="range" id="sl_sI0" min="0.3" max="30" step="0.1" value="0.5"><span id="v_sI0">0.50</span></div>
     <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.1" max="30" step="0.1" value="0.5"><span id="v_sc0">0.50</span></div>
     <div class="slider-row"><label>z<sub>T</sub>/R(0) &nbsp;(input curvature)</label><input type="range" id="sl_invR0" min="-0.5" max="0.5" step="0.005" value="0"><span id="v_invR0">0.000</span></div>
+    <div class="slider-row" style="gap:10px;margin-top:4px">
+      <label style="width:auto">d (nm):</label>
+      <input type="number" id="inp_d" value="100" step="1" min="1" style="width:70px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas">
+      <label style="width:auto">&nbsp;&lambda; (nm):</label>
+      <input type="number" id="inp_lambda" value="1.6" step="0.1" min="0.01" style="width:70px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas">
+    </div>
   </div>
   <div class="ctrl-col">
     <h3>Interferometer length, L separates source and grating and measurement point</h3>
@@ -397,7 +403,7 @@ let worker=new Worker(workerURL);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const NX=1024, NZ=400;
-const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,invR0:0,zmin:0,zmax:1.5,zsl:1.0,xiHalf:10,LNorm:1.0};
+const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,invR0:0,zmin:0,zmax:1.5,zsl:1.0,xiHalf:10,LNorm:1.0,lambda_nm:1.6,d_nm:100};
 let state={...DEFAULTS};
 let lastResult=null, computing=false, pendingCompute=false, lastPhysKey=null;
 let lastSliceContrast={ss:null,mf:null};
@@ -407,8 +413,8 @@ function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.invR0}|${s.
 const sliders={
   f:    ['sl_f',    'v_f',    v=>v.toFixed(2)],
   Pmax: ['sl_Pmax', 'v_Pmax', v=>v.toFixed(0)],
-  sI0:  ['sl_sI0',  'v_sI0',  v=>v.toFixed(2)],
-  sc0:  ['sl_sc0',  'v_sc0',  v=>v.toFixed(2)],
+  sI0:  ['sl_sI0',  'v_sI0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
+  sc0:  ['sl_sc0',  'v_sc0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
   invR0:['sl_invR0','v_invR0',v=>v.toFixed(3)],
   zmin: ['sl_zmin', 'v_zmin', v=>v.toFixed(1)],
   zmax: ['sl_zmax', 'v_zmax', v=>v.toFixed(1)],
@@ -450,12 +456,28 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
     }
   }
   state.xiHalf=DEFAULTS.xiHalf; state.LNorm=DEFAULTS.LNorm;
+  state.d_nm=DEFAULTS.d_nm; state.lambda_nm=DEFAULTS.lambda_nm;
+  document.getElementById('inp_d').value=DEFAULTS.d_nm;
+  document.getElementById('inp_lambda').value=DEFAULTS.lambda_nm;
   document.querySelectorAll('#lBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.l)===DEFAULTS.LNorm));
   document.querySelectorAll('#xiBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.xi)===DEFAULTS.xiHalf));
   scheduleCompute();
 });
 document.querySelectorAll('#lBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.l)===DEFAULTS.LNorm));
 document.querySelectorAll('#xiBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.xi)===DEFAULTS.xiHalf));
+
+document.getElementById('inp_d').addEventListener('change', ()=>{
+  const d = parseFloat(document.getElementById('inp_d').value);
+  if(!isFinite(d) || d <= 0) return;
+  state.d_nm = d;
+  if(lastResult) renderAll();
+});
+document.getElementById('inp_lambda').addEventListener('change', ()=>{
+  const lnm = parseFloat(document.getElementById('inp_lambda').value);
+  if(!isFinite(lnm) || lnm <= 0) return;
+  state.lambda_nm = lnm;
+  if(lastResult) renderAll();
+});
 
 function setSlider(key,val){
   const[sid,vid,fmt]=sliders[key];
@@ -520,6 +542,15 @@ worker.onmessage=function(e){
   if(pendingCompute) doCompute();
 };
 
+// ─── Physical unit helpers ────────────────────────────────────────────────────
+function fmtLen(nm) {
+  if (nm >= 1e6) return (nm/1e6).toFixed(3)+' mm';
+  if (nm >= 1e3) return (nm/1e3).toPrecision(4)+' μm';
+  if (nm >= 1)   return nm.toPrecision(4)+' nm';
+  return (nm*1e3).toPrecision(3)+' pm';
+}
+function zT_nm() { return 2 * state.d_nm * state.d_nm / state.lambda_nm; }
+
 // ─── Rendering ────────────────────────────────────────────────────────────────
 // vmax: shared upper bound so both carpets are on the same intensity scale.
 // Each carpet uses min=0, max=vmax, so a uniform microfluidic background
@@ -553,8 +584,8 @@ function renderCarpet(canvasId,data,cmap,vmax){
   ctx.textAlign='left';  ctx.fillText(`x=${(-xiH).toFixed(0)}d`,3,H-3);
   ctx.textAlign='right'; ctx.fillText(`x=${(xiH).toFixed(0)}d`,W-3,H-3);
   ctx.save(); ctx.translate(W-3,H-5); ctx.rotate(-Math.PI/2);
-  ctx.textAlign='right'; ctx.fillText(`z=${zmin.toFixed(1)}`,0,0);
-  ctx.textAlign='left';  ctx.fillText(`z=${zmax.toFixed(1)}`,-(H-10),0);
+  ctx.textAlign='right'; ctx.fillText(fmtLen(zmin*zT_nm()),0,0);
+  ctx.textAlign='left';  ctx.fillText(fmtLen(zmax*zT_nm()),-(H-10),0);
   ctx.restore();
 }
 
@@ -618,7 +649,7 @@ function renderSlice(){
   ctx.fillText('0',pad.l-3,pad.t+ph);
   ctx.fillText('max',pad.l-3,pad.t+4);
   ctx.textAlign='center'; ctx.fillStyle='#ccddee';
-  ctx.fillText(`Slice z/z\u1D57 = ${state.zsl.toFixed(2)}`,pad.l+pw/2,pad.t-7);
+  ctx.fillText(`Slice z = ${fmtLen(state.zsl*zT_nm())}`,pad.l+pw/2,pad.t-7);
   ctx.font='10px Consolas'; ctx.textAlign='left';
   [['#50c8b0', `Single src (s=0)  C=${sss.C.toFixed(3)}`],
    ['#c060ff', `Microfluidic (\u03a3s)  C=${smf.C.toFixed(3)}`]
@@ -693,8 +724,8 @@ function renderContrast(){
   ctx.fillText('1',pad.l-3,pad.t+4);
   ctx.fillText('0',pad.l-3,pad.t+ph);
   ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
-  ctx.textAlign='left';  ctx.fillText(zmin.toFixed(1),pad.l,H-4);
-  ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} z\u1D57`,pad.l+pw,H-4);
+  ctx.textAlign='left';  ctx.fillText(fmtLen(zmin*zT_nm()),pad.l,H-4);
+  ctx.textAlign='right'; ctx.fillText(fmtLen(zmax*zT_nm()),pad.l+pw,H-4);
   ctx.textAlign='center';
   ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
 
@@ -715,12 +746,17 @@ function renderInfo(){
   const A_sl = Math.max(state.zsl,0.001)**2/(2*sIL*sIL) + Math.PI**2/Dv;
   const sigEff_sl = (sIL*Math.sqrt(A_sl*Dv)/Math.PI).toFixed(4);
   const rhoStr=isFinite(rho)?rho.toFixed(3):'&infin;';
+  const zt = zT_nm();
   document.getElementById('infoPanel').innerHTML=`<div class="info-grid">
-    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}z<sub>T</sub>)</div>
+    <div class="info-head">Physical parameters</div>
+    ${kv('&lambda; =', `${state.lambda_nm} nm`)}
+    ${kv('d =', `${state.d_nm} nm`)}
+    ${kv('z<sub>T</sub> =', fmtLen(zt))}
+    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}&thinsp;z<sub>T</sub> = ${fmtLen(state.LNorm*zt)})</div>
     ${kv('f =', state.f.toFixed(2))}
     ${kv('p<sub>max</sub> =', state.Pmax)}
-    ${kv('&sigma;<sub>I</sub>(0)/d =', state.sI0.toFixed(2))}
-    ${kv('&sigma;<sub>c</sub>(0)/d =', state.sc0.toFixed(2))}
+    ${kv('&sigma;<sub>I</sub>(0) =', `${state.sI0.toFixed(2)}d = ${(state.sI0*state.d_nm).toFixed(1)} nm`)}
+    ${kv('&sigma;<sub>c</sub>(0) =', `${state.sc0.toFixed(2)}d = ${(state.sc0*state.d_nm).toFixed(1)} nm`)}
     ${kv('z<sub>T</sub>/R(0) =', state.invR0.toFixed(3))}
     <div class="info-head">GSM beam propagated to grating</div>
     ${kv('&sigma;<sub>I</sub>(L)/d =', sIL.toFixed(4))}
@@ -733,10 +769,10 @@ function renderInfo(){
     ${kv('&sigma;<sub>eff</sub>(z<sub>max</sub>)/d =', sig_rep.toFixed(4))}
     ${kv('S<sub>max</sub> = 3&sigma;+&xi; =', `3&times;${sig_rep.toFixed(2)}+${xiHalf} = ${S_max} &nbsp;(${S_hi-S_lo+1} srcs)`)}
     <div class="info-head">View</div>
-    ${kv('z:', `[${state.zmin.toFixed(1)},&thinsp;${state.zmax.toFixed(1)}] z<sub>T</sub>`)}
+    ${kv('z:', `[${fmtLen(state.zmin*zt)},&thinsp;${fmtLen(state.zmax*zt)}]`)}
     ${kv('x:', `&plusmn;${state.xiHalf}d`)}
-    ${kv('slice:', `z=${state.zsl.toFixed(2)} z<sub>T</sub>`)}
-    <div class="info-head">Contrast at slice z = ${state.zsl.toFixed(2)} z<sub>T</sub></div>
+    ${kv('slice:', `z = ${fmtLen(state.zsl*zt)}`)}
+    <div class="info-head">Contrast at slice z = ${fmtLen(state.zsl*zt)}</div>
     ${kv('C (microfluidic) =', lastSliceContrast.mf!==null ? lastSliceContrast.mf.toFixed(4) : '&mdash;')}
     ${kv('C (single src) =',   lastSliceContrast.ss!==null ? lastSliceContrast.ss.toFixed(4) : '&mdash;')}
   </div>`;
@@ -760,6 +796,9 @@ function renderAll(){
   renderInfo();
 }
 
+// Initialise physical-unit display for σ sliders
+document.getElementById('v_sI0').textContent = `${state.sI0.toFixed(2)}d = ${(state.sI0*state.d_nm).toFixed(1)}nm`;
+document.getElementById('v_sc0').textContent = `${state.sc0.toFixed(2)}d = ${(state.sc0*state.d_nm).toFixed(1)}nm`;
 scheduleCompute();
 </script>
 <script src="figExport.js"></script>
