@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Microfluidic GSM Talbot Carpet</title>
+<title>Wigner vs Analytic Carpet</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -51,8 +51,25 @@
 </style>
 </head>
 <body>
-<h2>Gaussian-Schell Model &#8212; Microfluidic Talbot Carpet</h2>
+<h2>Microfluidic Talbot Carpet &#8212; Wigner formula vs analytic GSM formula</h2>
 <div class="subtitle">
+<p style="color:#99aacc">Wigner formula (microFluidicWigner.html)</p>
+\[
+I_\text{mf}(x,z) = I_0\,\frac{\pi}{\sqrt{A(z)\Delta_v}}
+\sum_{m,n} a_m a_n\;
+\underbrace{e^{-\frac{\pi^2(m-n)^2(\lambda z)^2}{A(z)d^2}}}_{\text{order-pair suppression}}
+\;\underbrace{e^{\frac{2\pi i}{d}(m-n)\,\bar{x}_{mn}\,\Gamma(z)}}_{\text{fringe phase}}
+\;\sum_{s=-\infty}^{\infty}
+\underbrace{e^{-\frac{(\bar{x}_{mn}-sd)^2}{2\sigma_I(0)^2}\frac{\pi^2}{A(z)\Delta_v}}}_{\text{displaced source Gaussian}}
+\underbrace{e^{\frac{-2\pi i}{d}(m-n)sd\,\Gamma(z)}}_{\text{source fringe offset}}
+\]
+\[
+\bar{x}_{mn} = x - \tfrac{(m+n)\lambda z}{2d},\qquad
+A(z) = \tfrac{\lambda^2(L+z)^2}{2\sigma_I(0)^2} + \tfrac{\pi^2}{\Delta_v},\qquad
+\Gamma(z) = 1 - \tfrac{\lambda^2 z(L+z)}{2A(z)\sigma_I(0)^2},\qquad
+\Delta_v = \tfrac{1}{8\sigma_I(0)^2} + \tfrac{1}{2\sigma_c(0)^2}
+\]
+<p style="color:#99aacc;margin-top:6px">Analytic GSM formula (microfluidicAnalyticWeb.html)</p>
 \[
 \begin{aligned}
 I_{\text{microfluidic}}(x,L+z)
@@ -72,18 +89,21 @@ I_{\text{microfluidic}}(x,L+z)
 \underbrace{\exp\left[-\frac{s^2d^2}{2\sigma_I^2(L+z)}+\frac{sdx}{\sigma_I^2(L+z)}-\frac{s(m+n)\lambda z}{2\sigma_I^2(L+z)}+i\frac{2\pi s (m-n)z}{R(L+z)}\right]}_{\text{all source-position dependence}}
 \end{aligned}
 \]
+<p style="margin-top:6px">Both are evaluated on the same grid with the same parameters and the same normalisation (each source beam has on-axis intensity &sigma;<sub>I</sub>(0)/&sigma;<sub>I</sub>(L+z)). Lengths in d, distances in z<sub>T</sub> = 2d&sup2;/&lambda;.</p>
 </div>
 
 <div class="canvas-row">
   <div class="canvas-wrap">
-    <label>Single source &nbsp;(s&nbsp;=&nbsp;0)</label>
-    <canvas id="ssCanvas" width="300" height="420"></canvas>
-    <label style="margin-top:4px;font-size:10px;color:#667799">GSM beam &nbsp;(z:&thinsp;&minus;L &rarr; 0)</label>
-    <canvas id="beamCanvas" width="300" height="130"></canvas>
+    <label>Wigner formula &nbsp;<span class="modeLbl">(microfluidic)</span></label>
+    <canvas id="wCanvas" width="300" height="420"></canvas>
   </div>
   <div class="canvas-wrap">
-    <label>Microfluidic &nbsp;(all sources, &sum;<sub>s</sub>)</label>
-    <canvas id="mfCanvas"  width="300" height="420"></canvas>
+    <label>Analytic GSM formula &nbsp;<span class="modeLbl">(microfluidic)</span></label>
+    <canvas id="aCanvas" width="300" height="420"></canvas>
+  </div>
+  <div class="canvas-wrap">
+    <label>Difference &nbsp;(analytic &minus; Wigner) / max Wigner</label>
+    <canvas id="dCanvas" width="300" height="420"></canvas>
   </div>
   <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
     <div class="canvas-wrap">
@@ -135,7 +155,7 @@ I_{\text{microfluidic}}(x,L+z)
     <div class="slider-row"><label>Viewport z<sub>min</sub>/z<sub>T</sub>:</label><input type="range" id="sl_zmin" min="0" max="800" step="0.5" value="0"><span id="v_zmin">0.0</span></div>
     <div class="slider-row"><label>Viewport z<sub>max</sub>/z<sub>T</sub>:</label><input type="number" id="sl_zmax" min="0.1" step="0.5" value="1.5" style="width:80px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas;text-align:right"></div>
     <div class="slider-row"><label>Measurement slice z/z<sub>T</sub>:</label><input type="range" id="sl_zsl" min="0" max="800" step="0.05" value="1.0"><span id="v_zsl">1.00</span></div>
-    <div class="btn-row"><button id="logBtn">Linear</button><button id="normBtn">Norm: global</button><button id="resetBtn">Reset</button></div>
+    <div class="btn-row"><button id="modeBtn">Show: microfluidic</button><button id="logBtn">Linear</button><button id="normBtn">Norm: global</button><button id="resetBtn">Reset</button></div>
   </div>
 </div>
 <div id="progressBar"><div id="progressFill"></div></div>
@@ -161,7 +181,8 @@ const magma  = makeColormap([[0,0,0,4],[0.25,79,18,123],[0.5,182,54,122],[0.75,2
 const viridis= makeColormap([[0,68,1,84],[0.25,59,82,139],[0.5,33,145,140],[0.75,94,201,98],[1,253,231,37]]);
 
 // ─── Worker ───────────────────────────────────────────────────────────────────
-const WORKER_SRC = `
+// Analytic GSM formula (same worker as microfluidicAnalyticWeb.html)
+const WORKER_A_SRC = `
 // Units: x in d, z in z_T = 2d^2/lambda, sigma in d, R in z_T.
 // With zeta = z/z_T: lambda*z/d = 2*zeta*d  (lateral shift per order, Z = 2*zeta)
 //                    pi*lambda*z/d^2 = pi*Z   (Talbot phase)
@@ -367,10 +388,273 @@ self.onmessage=function(e){
   },[r.mfArr.buffer, r.ssArr.buffer, r.sIz.buffer, r.sCz.buffer, r.rhoz.buffer, r.pAct.buffer]);
 };
 `;
+// Wigner formula (same worker as microFluidicWigner.html)
+const WORKER_W_SRC = `
+const TWO_PI = 2*Math.PI;
+const PI2    = Math.PI*Math.PI;
 
-const workerBlob=new Blob([WORKER_SRC],{type:'application/javascript'});
-const workerURL=URL.createObjectURL(workerBlob);
-let worker=new Worker(workerURL);
+function sinc(x){
+  if(Math.abs(x)<1e-12) return 1.0;
+  return Math.sin(Math.PI*x)/(Math.PI*x);
+}
+
+function gratingCoeffs(Pmax,f){
+  const am=new Array(2*Pmax+1);
+  for(let k=0;k<=2*Pmax;k++) am[k]=f*sinc((k-Pmax)*f);
+  return am;
+}
+
+/*
+ * Normalised units used throughout the worker.
+ *
+ *   lengths x, σ_I(0), σ_c(0)  — in grating periods d  (so d = 1)
+ *   distances ζ = z/z_T and ℓ = L/z_T, with the Talbot length z_T = 2d²/λ
+ *
+ * Hence λz/d = 2ζ and λL/d = 2ℓ, which is the substitution applied below to
+ * every λ-bearing term of eqn:microfluidicWigner:
+ *
+ *   x̄_mn = x − (m+n)λz/(2d)              →  x − (m+n)ζ
+ *   A(ζ)  = λ²(L+z)²/(2σ_I(0)²) + π²/Δ_v   →  2(ℓ+ζ)²/σ_I(0)² + π²/Δ_v
+ *   Γ(ζ)  = 1 − λ²z(L+z)/(2Aσ_I(0)²)      →  1 − 2ζ(ℓ+ζ)/(Aσ_I(0)²)
+ *   π²(m−n)²(λz)²/(A d²)               →  4π²(m−n)²ζ²/A
+ *
+ * Γ(ζ) → ℓ/(ℓ+ζ) for large ζ: the geometric demagnification of the fringe
+ * frequency caused by the finite source distance L.  At L = 0 it reduces to
+ * π²/(AΔ_v), the collimated-illumination carpet.
+ */
+
+/*
+ * Computes microfluidic Talbot carpet intensity (or single-source if singleSource=true).
+ *
+ * Physical source bound: s_max = ceil(2*LNorm)  [from λ/d × L/d in d=1 units]
+ * Sources outside this range make negligible geometric contribution.
+ *
+ * Two inner-loop strategies depending on sigEff vs xiHalf:
+ *
+ * FAST PATH (sigEff > FAST_THRESH*xiHalf):
+ *   When σeff >> view half-width, the Gaussian G(x,xcs)≈G(0,xcs) is nearly
+ *   x-independent across the view.  Factorize:
+ *     Σ_s G_s · cos(β(x-xcs)) = SR·cos(βx) + SIpos·sin(βx)
+ *   where SR,SIpos = Σ_s G_s·cos/sin(β·xcs) — computed via a phasor walk
+ *   over sources (no trig in loop).  Then a single pixel phasor walk gives
+ *   the whole row.  Cost: O(nSrc + NX) per (q,p,iz).
+ *
+ * EXACT PATH (small sigEff):
+ *   Per-source Gaussian mask + phasor walk over covered pixels.
+ *   Cost: O(nSrc × covered_pixels) per (q,p,iz).
+ */
+const FAST_THRESH = 2.0;  // sigEff/xiHalf above which to use the fast path
+
+function computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, singleSource, LNorm, progressFn){
+  const am = gratingCoeffs(Pmax, f);
+
+  const sI0sq = sI0*sI0;
+  const Dv    = 1/(8*sI0sq) + 1/(2*sc0*sc0);
+  const preDv = Math.sqrt(Math.PI/Dv);
+
+  const dx  = 2*xiHalf/(NX-1),  x0  = -xiHalf;
+  const dz  = NZ>1 ? (zmax-zmin)/(NZ-1) : 0;
+  const arr = new Float32Array(NZ*NX);
+
+  // Outer bound on the source index s, derived from the formula itself.
+  // Source s contributes a Gaussian of width σeff centred at xc = s + (m+n)ζ,
+  // so it is visible somewhere in x ∈ [-ξhalf, ξhalf] when
+  //     |s| ≤ 3·σeff(zmax) + ξhalf + max|(m+n)ζ|,
+  // the last term being the order-pair shift (|m+n| ≤ 2·Pmax).  Leaving it out
+  // clips real sources whenever the shift exceeds the Gaussian reach.
+  const zL_zmax     = LNorm + zmax;
+  const A_zmax      = 2*zL_zmax*zL_zmax/sI0sq + PI2/Dv;
+  const sigEff_zmax = sI0 * Math.sqrt(A_zmax * Dv) / Math.PI;
+  const orderShift  = 2*Pmax*Math.max(Math.abs(zmin), Math.abs(zmax));
+  // Capped so a very wide source Gaussian (large L, large σeff) can't blow the
+  // index range up to an intractable size.  The per-q window below is bounded by
+  // 3σeff+ξhalf regardless, so the cap only ever bites in pathological cases.
+  const S_max = singleSource ? 0
+              : Math.min(200000, Math.ceil(3*sigEff_zmax + xiHalf + orderShift));
+
+  for(let iz=0; iz<NZ; iz++){
+    const zeta    = zmin + iz*dz;
+    const zetaSq  = zeta*zeta;
+    const zL      = LNorm + zeta;                   // (L+z), in z_T units
+    const A       = 2*zL*zL/sI0sq + PI2/Dv;
+    // Γ(z): propagation-acquired scaling of the fringe frequency.
+    const Gamma   = 1 - 2*zeta*zL/(A*sI0sq);
+    // σ_eff² = σ_I(0)² A Δ_v/π² = σ_I(0)² + 2(ℓ+ζ)²Δ_v/π² — the sheared source
+    // width after propagating the full distance L+z.
+    const sigEff  = sI0 * Math.sqrt(A*Dv) / Math.PI;
+    const sig2eff = 2*sigEff*sigEff;
+    const preA    = preDv * Math.sqrt(Math.PI/A);
+    const outRe   = new Float64Array(NX);
+
+    const useFast = !singleSource && sigEff > FAST_THRESH * xiHalf;
+
+    for(let q = -2*Pmax; q <= 2*Pmax; q++){
+      const qHalfZeta = q * zeta;   // (m+n)λz/(2d) = (m+n)ζ
+
+      // Source range: physical bound ∩ Gaussian 3σ reach of view window
+      // Gaussian centre of source s is xcs = s + qHalfZeta.
+      // Source contributes when |xcs - x| < 3σeff for some x ∈ [-xiHalf, xiHalf],
+      // i.e. xcs ∈ (-3σeff - xiHalf, 3σeff + xiHalf), i.e. s ∈ (...) - qHalfZeta.
+      let S_lo_q, S_hi_q;
+      if(singleSource){
+        S_lo_q = S_hi_q = 0;
+      } else {
+        const margin = 3*sigEff + xiHalf;
+        S_lo_q = Math.max(-S_max, Math.floor(-qHalfZeta - margin));
+        S_hi_q = Math.min( S_max, Math.ceil (-qHalfZeta + margin));
+      }
+      if(S_lo_q > S_hi_q) continue;
+      const nSrc = S_hi_q - S_lo_q + 1;
+
+      const mMin = Math.max(-Pmax, q - Pmax);
+      const mMax = Math.min( Pmax, q + Pmax);
+
+      if(useFast){
+        // ── Fast factorized path ──────────────────────────────────────────────
+        // Precompute Gaussian weights w_s = exp(-xcs²/sig2eff) (approx G(x,xcs)≈G(0,xcs))
+        // These are shared across all p for this q.
+        const ws = new Float64Array(nSrc);
+        for(let si=0; si<nSrc; si++){
+          const xc = S_lo_q + si + qHalfZeta;
+          ws[si] = Math.exp(-xc*xc / sig2eff);
+        }
+
+        for(let m=mMin; m<=mMax; m++){
+          const n = q - m;
+          if(n < -Pmax || n > Pmax) continue;
+          const p   = m - n;
+          const amn = am[m+Pmax] * am[n+Pmax];
+          if(Math.abs(amn) < 1e-15) continue;
+          const decayArg = 4 * PI2 * p*p * zetaSq / A;
+          if(decayArg > 69) continue;
+          const coeff = preA * amn * Math.exp(-decayArg);
+
+          const phaseRate = TWO_PI * p * Gamma;
+
+          // Source phasor walk: phase of source si is phaseRate*(S_lo_q+si+qHalfZeta)
+          // Successive sources differ by phaseRate in phase.
+          const srcPh0     = phaseRate * (S_lo_q + qHalfZeta);
+          const srcStepCos = Math.cos(phaseRate);
+          const srcStepSin = Math.sin(phaseRate);
+          let sPRe = Math.cos(srcPh0), sPIm = Math.sin(srcPh0);
+          let SR = 0, SIpos = 0;
+          for(let si=0; si<nSrc; si++){
+            SR    += ws[si] * sPRe;
+            SIpos += ws[si] * sPIm;
+            const nr = sPRe*srcStepCos - sPIm*srcStepSin;
+            const ni = sPRe*srcStepSin + sPIm*srcStepCos;
+            sPRe=nr; sPIm=ni;
+          }
+
+          // Pixel phasor walk: contribution at pixel x is coeff*(SR*cos(β·x)+SIpos*sin(β·x))
+          const dPhase  = phaseRate * dx;
+          const stepCos = Math.cos(dPhase);
+          const stepSin = Math.sin(dPhase);
+          const ph0     = phaseRate * x0;
+          let pRe = Math.cos(ph0), pIm = Math.sin(ph0);
+          for(let ix=0; ix<NX; ix++){
+            outRe[ix] += coeff * (SR * pRe + SIpos * pIm);
+            const nr = pRe*stepCos - pIm*stepSin;
+            const ni = pRe*stepSin + pIm*stepCos;
+            pRe=nr; pIm=ni;
+          }
+        }
+
+      } else {
+        // ── Exact discrete path ───────────────────────────────────────────────
+        // Per-source Gaussian mask; phasor walk starts at xcs[si] to combine
+        // fringe phase and source phase automatically.
+        const masks = new Array(nSrc);
+        const ilos  = new Int32Array(nSrc);
+        const lens  = new Int32Array(nSrc);
+        const xcs   = new Float64Array(nSrc);
+
+        for(let si=0; si<nSrc; si++){
+          const s  = S_lo_q + si;
+          const xc = s + qHalfZeta;
+          xcs[si]  = xc;
+          const ilo = Math.max(0,    Math.ceil( (xc - 3*sigEff - x0)/dx));
+          const ihi = Math.min(NX-1, Math.floor((xc + 3*sigEff - x0)/dx));
+          ilos[si]  = ilo;
+          lens[si]  = ihi - ilo + 1;
+          if(ilo <= ihi){
+            const mask = new Float32Array(ihi-ilo+1);
+            for(let ix=ilo; ix<=ihi; ix++){
+              const u = x0 + ix*dx - xc;
+              mask[ix-ilo] = Math.exp(-u*u/sig2eff);
+            }
+            masks[si] = mask;
+          }
+        }
+
+        for(let m=mMin; m<=mMax; m++){
+          const n = q - m;
+          if(n < -Pmax || n > Pmax) continue;
+          const p   = m - n;
+          const amn = am[m+Pmax] * am[n+Pmax];
+          if(Math.abs(amn) < 1e-15) continue;
+          const decayArg = 4 * PI2 * p*p * zetaSq / A;
+          if(decayArg > 69) continue;
+          const coeff = preA * amn * Math.exp(-decayArg);
+
+          const phaseRate = TWO_PI * p * Gamma;
+          const dPhase    = phaseRate * dx;
+          const stepCos   = Math.cos(dPhase);
+          const stepSin   = Math.sin(dPhase);
+
+          for(let si=0; si<nSrc; si++){
+            const mask = masks[si];
+            if(!mask) continue;
+            const ilo  = ilos[si];
+            const len  = lens[si];
+            if(len <= 0) continue;
+
+            const ph0 = phaseRate * (x0 + ilo*dx - xcs[si]);
+            let pRe = Math.cos(ph0), pIm = Math.sin(ph0);
+
+            for(let k=0; k<len; k++){
+              outRe[ilo+k] += coeff * mask[k] * pRe;
+              const nr = pRe*stepCos - pIm*stepSin;
+              const ni = pRe*stepSin + pIm*stepCos;
+              pRe=nr; pIm=ni;
+            }
+          }
+        }
+      }
+    }
+
+    for(let ix=0; ix<NX; ix++) arr[iz*NX+ix] = Math.max(0, outRe[ix]);
+    if(progressFn && (iz % 10 === 9 || iz === NZ-1)) progressFn(iz+1, NZ);
+  }
+  return arr;
+}
+
+self.onmessage = function(e){
+  const{Pmax,f,sI0,sc0,LNorm,NZ,NX,xiHalf,zmin,zmax} = e.data;
+  const t0 = Date.now();
+  const mfArr = computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, false, LNorm,
+    (iz, n) => self.postMessage({type:'progress', pct: iz/n*50}));
+  const ssArr = computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, true,  LNorm,
+    (iz, n) => self.postMessage({type:'progress', pct: 50 + iz/n*50}));
+
+  // Report source range — must match the S_max used in computeFormula
+  const Dv_rep  = 1/(8*sI0*sI0) + 1/(2*sc0*sc0);
+  const zL_rep  = LNorm + zmax;
+  const A_rep   = 2*zL_rep*zL_rep/(sI0*sI0) + Math.PI**2/Dv_rep;
+  const sig_rep = sI0*Math.sqrt(A_rep*Dv_rep)/Math.PI;   // σeff at z = zmax
+  const shift   = 2*Pmax*Math.max(Math.abs(zmin), Math.abs(zmax));
+  const S_max   = Math.min(200000, Math.ceil(3*sig_rep + xiHalf + shift));
+  const dt = Date.now() - t0;
+
+  self.postMessage({
+    type:'result',
+    mfArr:mfArr.buffer, ssArr:ssArr.buffer,
+    sig_rep, S_max, dt
+  }, [mfArr.buffer, ssArr.buffer]);
+};
+`;
+function mkWorker(src){ return new Worker(URL.createObjectURL(new Blob([src],{type:'application/javascript'}))); }
+const workerA=mkWorker(WORKER_A_SRC), workerW=mkWorker(WORKER_W_SRC);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const NX=1024, NZ=400;
@@ -381,8 +665,8 @@ function fmtSc0(v){ return v>=1e5 ? '∞ (fully coherent)' : `${v.toFixed(2)}d =
 const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,zmin:0,zmax:1.5,zsl:1.0,xiHalf:10,LNorm:1.0,lambda_nm:1.6,d_nm:100};
 let state={...DEFAULTS};
 let lastResult=null, computing=false, pendingCompute=false, lastPhysKey=null, sentPhysKey=null, sentView={};
-let lastSliceContrast={ss:null,mf:null};
-let logScale=false, normPerZ=false;
+let lastSliceContrast={w:null,a:null};
+let logScale=false, normPerZ=false, showMF=true;
 function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.LNorm}|${s.zmin}|${s.zmax}|${s.xiHalf}`;}
 
 // ─── GSM propagation (same normalisation as the worker) ────────────────────
@@ -521,7 +805,7 @@ function setSlider(key,val){
   if(ni) ni.value=val;
 }
 
-['mfCanvas','ssCanvas'].forEach(id=>{
+['wCanvas','aCanvas','dCanvas'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{
     const rect=e.target.getBoundingClientRect();
     const fracY=1-(e.clientY-rect.top)/rect.height;
@@ -533,6 +817,7 @@ function setSlider(key,val){
 });
 
 // ─── Compute ──────────────────────────────────────────────────────────────────
+let pendingParts=null, partial=null, progW=0, progA=0, tStart=0;
 function scheduleCompute(){if(computing){pendingCompute=true;return;}doCompute();}
 function doCompute(){
   computing=true; pendingCompute=false;
@@ -541,44 +826,54 @@ function doCompute(){
   sentPhysKey=key;
   sentView={zmin:state.zmin, zmax:state.zmax, xiHalf:state.xiHalf};
   document.getElementById('statusLine').textContent='Computing\u2026';
-  document.getElementById('progressFill').style.width='0%';
-  document.getElementById('progressBar').style.display='block';
-  worker.postMessage({
+  progressFill.style.width='0%';
+  progressBar.style.display='block';
+  const msg={
     Pmax:state.Pmax, f:state.f, sI0:state.sI0, sc0:state.sc0,
     LNorm:state.LNorm, NZ, NX,
     xiHalf:state.xiHalf, zmin:state.zmin, zmax:state.zmax,
-  });
+  };
+  partial={}; pendingParts=2; progW=0; progA=0; tStart=Date.now();
+  workerW.postMessage(msg);
+  workerA.postMessage(msg);
 }
 const progressFill=document.getElementById('progressFill');
 const progressBar =document.getElementById('progressBar');
-worker.onerror=function(e){
+function onWorkerError(e){
   computing=false;
   progressBar.style.display='none';
   document.getElementById('statusLine').textContent='Worker error: '+e.message;
-};
-worker.onmessage=function(e){
+}
+workerW.onerror=onWorkerError; workerA.onerror=onWorkerError;
+function onPart(which,e){
   if(e.data.type==='progress'){
-    progressFill.style.width=e.data.pct.toFixed(1)+'%';
+    if(which==='w') progW=e.data.pct; else progA=e.data.pct;
+    progressFill.style.width=((progW+progA)/2).toFixed(1)+'%';
     return;
   }
-  const{mfArr,ssArr,sIz,sCz,rhoz,pAct,dt}=e.data;
+  partial[which]={mf:new Float32Array(e.data.mfArr), ss:new Float32Array(e.data.ssArr), dt:e.data.dt};
+  if(--pendingParts>0) return;
   lastResult={
-    mf:new Float32Array(mfArr), ss:new Float32Array(ssArr),
-    sIz:new Float64Array(sIz), sCz:new Float64Array(sCz), rhoz:new Float64Array(rhoz),
-    pAct:new Int32Array(pAct),
+    w:partial.w, a:partial.a,
     zmin:sentView.zmin,zmax:sentView.zmax,xiHalf:sentView.xiHalf
   };
   lastPhysKey=sentPhysKey; computing=false;
   progressFill.style.width='100%';
   setTimeout(()=>{ progressBar.style.display='none'; progressFill.style.width='0%'; }, 300);
-
   document.getElementById('statusLine').textContent=
-    `Done (${dt}\u202fms) | \u03a3_s over all sources (Poisson summation) | `+
-    `z_T = 2d\u00b2/\u03bb = ${fmtLen(zT_nm())} | `+
-    `\u03c3_I(L+z_max)=${lastResult.sIz[NZ-1].toFixed(3)}d | |m\u2212n|_max(z_max)=${lastResult.pAct[NZ-1]}`;
+    `Done (${Date.now()-tStart}\u202fms: Wigner ${partial.w.dt}\u202fms, analytic ${partial.a.dt}\u202fms) | `+
+    `z_T = 2d\u00b2/\u03bb = ${fmtLen(zT_nm())}`;
   renderAll();
   if(pendingCompute) doCompute();
-};
+}
+workerW.onmessage=e=>onPart('w',e);
+workerA.onmessage=e=>onPart('a',e);
+document.getElementById('modeBtn').addEventListener('click',()=>{
+  showMF=!showMF;
+  document.getElementById('modeBtn').textContent=showMF?'Show: microfluidic':'Show: single source';
+  document.querySelectorAll('.modeLbl').forEach(el=>el.textContent=showMF?'(microfluidic)':'(single source, s = 0)');
+  if(lastResult) renderAll();
+});
 
 // ─── Physical unit helpers ────────────────────────────────────────────────────
 function fmtLen(nm) {
@@ -658,73 +953,61 @@ function renderExtended(canvasId, data, cmap, scale){
   ctx.restore();
 }
 
-// Renders the pre-grating GSM beam from source (z=-LNorm) to grating (z=0).
-function renderBeam(){
-  const canvas=document.getElementById('beamCanvas');
-  if(!canvas||!lastResult) return;
+function pick(res){ return showMF ? res.mf : res.ss; }
+function rowStats(arr,iz){
+  let mx=-Infinity,mn=Infinity; const o=iz*NX;
+  for(let ix=0;ix<NX;ix++){const v=arr[o+ix]; if(v>mx)mx=v; if(v<mn)mn=v;}
+  return {mx,mn,C:(mx+mn>0)?(mx-mn)/(mx+mn):0};
+}
+function sliceIndex(){
+  const{zmin,zmax}=lastResult;
+  return Math.round(Math.max(0,Math.min(1,(state.zsl-zmin)/(zmax-zmin)))*(NZ-1));
+}
+
+// Diverging colormap for the difference map: blue (analytic < Wigner) → dark → red (analytic > Wigner)
+const diverging=makeColormap([[0,80,150,255],[0.25,40,80,160],[0.5,10,10,20],[0.75,170,60,50],[1,255,120,80]]);
+// Difference (A−W) normalised by the Wigner scale (global max, or row max in per-z mode).
+function diffArray(){
+  const W=pick(lastResult.w), A=pick(lastResult.a);
+  const scale=scaleFor(W);
+  const D=new Float32Array(NZ*NX);
+  let dmax=0, sq=0;
+  for(let iz=0;iz<NZ;iz++){
+    const s=scale(iz)||1, o=iz*NX;
+    for(let ix=0;ix<NX;ix++){
+      const v=(A[o+ix]-W[o+ix])/s;
+      D[o+ix]=v; sq+=v*v;
+      if(Math.abs(v)>dmax) dmax=Math.abs(v);
+    }
+  }
+  return {D, dmax, rms:Math.sqrt(sq/(NZ*NX))};
+}
+function renderDiff(){
+  const canvas=document.getElementById('dCanvas');
   const ctx=canvas.getContext('2d');
   const W=canvas.width, H=canvas.height;
-  const img=ctx.createImageData(W,H);
-  const d=img.data;
-
-  const{xiHalf}=lastResult;
-  const{LNorm}=state;
-  const sigGrating=sigIOf(LNorm);   // beam width arriving at the grating
-
-  // Global mode: same absolute scale as ssCanvas.  Per-z mode: each row is
-  // divided by its own peak, which sits at x=0, leaving the bare beam profile.
-  let vmaxSS=0;
-  for(let i=0;i<lastResult.ss.length;i++) if(lastResult.ss[i]>vmaxSS) vmaxSS=lastResult.ss[i];
-  const rangeGlobal=vmaxSS||1;
-
-  const toDisplay=logScale ? v=>Math.log2(1+Math.max(0,v)) : v=>Math.max(0,v);
-  // GSM width after a distance u from the source: σ_I(u)² = σ_I(0)² + u²p_d/π²
-  // (z_T units).  At u = L this is σ_I(L), so the panel joins the carpet.
-  const sigAt=sigIOf;
-
-  // row 0 = top = grating (z_prop=LNorm), row H-1 = bottom = source (z_prop=0)
+  const img=ctx.createImageData(W,H); const d=img.data;
+  const{zmin,zmax,xiHalf}=lastResult;
+  const{D,dmax}=diffArray();
+  const range=dmax||1;
   for(let row=0;row<H;row++){
-    const z_prop=LNorm*(1-row/(H-1));
-    const sig=sigAt(z_prop);
-    const sig2=2*sig*sig;
+    const z=zmax-row/(H-1)*(zmax-zmin);
+    const iz=Math.min(NZ-1,Math.max(0,Math.round((z-zmin)/(zmax-zmin)*(NZ-1))));
     for(let col=0;col<W;col++){
-      const x=-xiHalf+col/(W-1)*2*xiHalf;
-      const v=toDisplay(normPerZ ? Math.exp(-x*x/sig2)
-                                 : (sigGrating/sig)*Math.exp(-x*x/sig2)/rangeGlobal);
-      const[r,g,b]=viridis(Math.min(1,v));
+      const ix=Math.floor(col/(W-1)*(NX-1));
+      const[r,g,b]=diverging(0.5+0.5*D[iz*NX+ix]/range);
       const idx=(row*W+col)*4;
       d[idx]=r;d[idx+1]=g;d[idx+2]=b;d[idx+3]=255;
     }
   }
   ctx.putImageData(img,0,0);
-
-  // Grating line at top (z=0)
-  ctx.strokeStyle='rgba(255,220,80,0.75)'; ctx.lineWidth=1.5;
-  ctx.setLineDash([5,4]);
-  ctx.beginPath(); ctx.moveTo(0,1); ctx.lineTo(W,1); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // ±σ_I(z) contour
-  ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
-  ctx.setLineDash([3,3]);
-  for(const sign of[1,-1]){
-    ctx.beginPath();
-    for(let row=0;row<H;row++){
-      const z_prop=LNorm*(1-row/(H-1));
-      const sig=sigAt(z_prop);
-      const xPx=(sign*sig+xiHalf)/(2*xiHalf)*(W-1);
-      row===0?ctx.moveTo(xPx,row):ctx.lineTo(xPx,row);
-    }
-    ctx.stroke();
-  }
-  ctx.setLineDash([]);
-
-  // Labels
-  ctx.fillStyle='#ffffffaa'; ctx.font='10px Consolas';
-  ctx.save(); ctx.translate(W-3,H-4); ctx.rotate(-Math.PI/2);
-  ctx.textAlign='right'; ctx.fillText(`z=\u2212${LNorm.toFixed(1)}`,0,0);
-  ctx.textAlign='left';  ctx.fillText('z=0',-(H-10),0);
-  ctx.restore();
+  const lineY=Math.round(Math.max(0,Math.min(H-1,(zmax-state.zsl)/(zmax-zmin)*(H-1))));
+  ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,lineY); ctx.lineTo(W,lineY); ctx.stroke();
+  ctx.fillStyle='#ffffffcc'; ctx.font='10px Consolas';
+  ctx.textAlign='left';  ctx.fillText(`x=${(-xiHalf).toFixed(0)}d`,3,H-3);
+  ctx.textAlign='right'; ctx.fillText(`x=${xiHalf.toFixed(0)}d`,W-3,H-3);
+  ctx.textAlign='left';  ctx.fillText(`colour range \u00b1${dmax.toExponential(2)}`,3,12);
 }
 
 function renderSlice(){
@@ -733,48 +1016,26 @@ function renderSlice(){
   const W=canvas.width,H=canvas.height;
   ctx.fillStyle='#0a0a14'; ctx.fillRect(0,0,W,H);
   if(!lastResult) return;
-  const{mf,ss,zmin,zmax}=lastResult;
-  const fracZ=(state.zsl-zmin)/(zmax-zmin);
-  const iz=Math.round(Math.max(0,Math.min(1,fracZ))*(NZ-1));
-  const mfS=mf.slice(iz*NX,(iz+1)*NX);
-  const ssS=ss.slice(iz*NX,(iz+1)*NX);
-
-  function stats(arr){
-    let mx=-Infinity,mn=Infinity;
-    for(let i=0;i<NX;i++){if(arr[i]>mx)mx=arr[i];if(arr[i]<mn)mn=arr[i];}
-    if(mx===mn){mx=mn+1;}  // flat signal: give range=1 so curve sits at bottom
-    const C=(mx+mn>0)?(mx-mn)/(mx+mn):0;
-    return{mx,mn,C};
-  }
-  const sss=stats(ssS), smf=stats(mfS);
-  lastSliceContrast={ss:sss.C, mf:smf.C};
+  const iz=sliceIndex();
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  const sw=rowStats(Wd,iz), sa=rowStats(Ad,iz);
+  lastSliceContrast={w:sw.C, a:sa.C};
+  const top=Math.max(sw.mx,sa.mx)||1;   // common scale so amplitudes are comparable
 
   const pad={l:40,r:15,t:25,b:35};
   const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
   const toX=i=>pad.l+(i/(NX-1))*pw;
   const toY=v=>pad.t+ph*(1-v);
-  // Normalise each curve to its own [0, max] so the y-axis starts at absolute zero.
-  function norm(v,st){return v/st.mx;}
-  function fill(data,st,col){
-    ctx.save(); ctx.beginPath();
-    ctx.moveTo(toX(0),toY(0));
-    for(let i=0;i<NX;i++) ctx.lineTo(toX(i),toY(norm(data[i],st)));
-    ctx.lineTo(toX(NX-1),toY(0)); ctx.closePath();
-    ctx.globalAlpha=0.14; ctx.fillStyle=col; ctx.fill(); ctx.restore();
+  function line(arr,col,dash){
+    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash(dash);
+    for(let i=0;i<NX;i++){const x=toX(i),y=toY(arr[iz*NX+i]/top);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke(); ctx.setLineDash([]);
   }
-  function line(data,st,col){
-    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.5;
-    for(let i=0;i<NX;i++){const x=toX(i),y=toY(norm(data[i],st));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-    ctx.stroke();
-  }
-
-  fill(ssS,sss,'#50c8b0'); line(ssS,sss,'#50c8b0');
-  fill(mfS,smf,'#c060ff'); line(mfS,smf,'#c060ff');
+  line(Wd,'#50c8b0',[]);
+  line(Ad,'#ff9955',[5,3]);
 
   ctx.strokeStyle='#445566'; ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph);
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
   ctx.fillStyle='#aabbcc'; ctx.font='11px Consolas';
   const xiH=lastResult.xiHalf;
   ctx.textAlign='center';
@@ -785,12 +1046,11 @@ function renderSlice(){
   ctx.textAlign='right';
   ctx.fillText('I (a.u.)',pad.l-3,pad.t+8);
   ctx.fillText('0',pad.l-3,pad.t+ph);
-  ctx.fillText('max',pad.l-3,pad.t+4);
   ctx.textAlign='center'; ctx.fillStyle='#ccddee';
   ctx.fillText(`Slice z/z_T = ${state.zsl.toFixed(2)}`,pad.l+pw/2,pad.t-7);
   ctx.font='10px Consolas'; ctx.textAlign='left';
-  [['#50c8b0', `Single src (s=0)  C=${sss.C.toFixed(3)}`],
-   ['#c060ff', `Microfluidic (\u03a3s)  C=${smf.C.toFixed(3)}`]
+  [['#50c8b0', `Wigner    C=${sw.C.toFixed(4)}`],
+   ['#ff9955', `Analytic  C=${sa.C.toFixed(4)}`]
   ].forEach(([col,txt],i)=>{
     ctx.fillStyle=col; ctx.fillRect(pad.l+4,pad.t+5+i*13,12,3);
     ctx.fillStyle='#aabbcc'; ctx.fillText(txt,pad.l+19,pad.t+9+i*13);
@@ -803,110 +1063,74 @@ function renderContrast(){
   const W=canvas.width, H=canvas.height;
   ctx.fillStyle='#0a0a14'; ctx.fillRect(0,0,W,H);
   if(!lastResult) return;
-  const{mf,ss,zmin,zmax}=lastResult;
-
-  // Compute contrast for every z slice
-  const Cmf=new Float32Array(NZ);
-  const Css=new Float32Array(NZ);
-  for(let iz=0;iz<NZ;iz++){
-    let mxM=-Infinity,mnM=Infinity,mxS=-Infinity,mnS=Infinity;
-    for(let ix=0;ix<NX;ix++){
-      const vm=mf[iz*NX+ix], vs=ss[iz*NX+ix];
-      if(vm>mxM)mxM=vm; if(vm<mnM)mnM=vm;
-      if(vs>mxS)mxS=vs; if(vs<mnS)mnS=vs;
-    }
-    Cmf[iz]=(mxM+mnM>0)?(mxM-mnM)/(mxM+mnM):0;
-    Css[iz]=(mxS+mnS>0)?(mxS-mnS)/(mxS+mnS):0;
-  }
+  const{zmin,zmax}=lastResult;
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  const Cw=new Float32Array(NZ), Ca=new Float32Array(NZ);
+  for(let iz=0;iz<NZ;iz++){ Cw[iz]=rowStats(Wd,iz).C; Ca[iz]=rowStats(Ad,iz).C; }
 
   const pad={l:34,r:12,t:18,b:28};
   const pw=W-pad.l-pad.r, ph=H-pad.t-pad.b;
   const toX=iz=>pad.l+iz/(NZ-1)*pw;
   const toY=c=>pad.t+ph*(1-Math.max(0,Math.min(1,c)));
-
-  // Grid lines at 0.25, 0.5, 0.75
   ctx.strokeStyle='#1e2e3e'; ctx.lineWidth=0.8;
-  [0.25,0.5,0.75].forEach(c=>{
-    ctx.beginPath(); ctx.moveTo(pad.l,toY(c)); ctx.lineTo(pad.l+pw,toY(c)); ctx.stroke();
-  });
-
-  // Curves
-  function drawLine(arr,col){
-    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.5;
-    for(let iz=0;iz<NZ;iz++){
-      const x=toX(iz),y=toY(arr[iz]);
-      iz===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    }
-    ctx.stroke();
+  [0.25,0.5,0.75].forEach(c=>{ ctx.beginPath(); ctx.moveTo(pad.l,toY(c)); ctx.lineTo(pad.l+pw,toY(c)); ctx.stroke(); });
+  function drawLine(arr,col,dash){
+    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash(dash);
+    for(let iz=0;iz<NZ;iz++){ const x=toX(iz),y=toY(arr[iz]); iz===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke(); ctx.setLineDash([]);
   }
-  drawLine(Css,'#50c8b0');
-  drawLine(Cmf,'#c060ff');
-
-  // Vertical dashed line at current slice z
-  const fracZ=Math.max(0,Math.min(1,(state.zsl-zmin)/(zmax-zmin)));
-  const slX=pad.l+fracZ*pw;
-  ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1;
-  ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(slX,pad.t); ctx.lineTo(slX,pad.t+ph); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Axes
+  drawLine(Cw,'#50c8b0',[]);
+  drawLine(Ca,'#ff9955',[5,3]);
+  const slX=pad.l+Math.max(0,Math.min(1,(state.zsl-zmin)/(zmax-zmin)))*pw;
+  ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(slX,pad.t); ctx.lineTo(slX,pad.t+ph); ctx.stroke(); ctx.setLineDash([]);
   ctx.strokeStyle='#445566'; ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph);
-  ctx.stroke();
-
-  // Labels
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
   ctx.fillStyle='#aabbcc'; ctx.font='10px Consolas';
   ctx.textAlign='right';
-  ctx.fillText('1',pad.l-3,pad.t+4);
-  ctx.fillText('0',pad.l-3,pad.t+ph);
-  ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
+  ctx.fillText('1',pad.l-3,pad.t+4); ctx.fillText('0',pad.l-3,pad.t+ph); ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
   ctx.textAlign='left';  ctx.fillText(zmin.toFixed(1),pad.l,H-4);
   ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} z_T`,pad.l+pw,H-4);
-  ctx.textAlign='center';
-  ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
-
-  // Legend
-  ctx.font='10px Consolas'; ctx.textAlign='left';
-  [['#50c8b0','Single src'],['#c060ff','Microfluidic']].forEach(([col,lbl],i)=>{
+  ctx.textAlign='center'; ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
+  ctx.textAlign='left';
+  [['#50c8b0','Wigner'],['#ff9955','Analytic']].forEach(([col,lbl],i)=>{
     ctx.fillStyle=col; ctx.fillRect(pad.l+4,pad.t+5+i*13,10,2);
     ctx.fillStyle='#aabbcc'; ctx.fillText(lbl,pad.l+17,pad.t+9+i*13);
   });
+  let dC=0; for(let iz=0;iz<NZ;iz++) dC=Math.max(dC,Math.abs(Ca[iz]-Cw[iz]));
+  lastResult.maxDC=dC;
 }
 
 function kv(k,v){ return `<div class="info-kv"><span class="info-k">${k}</span><span class="info-v">${v}</span></div>`; }
 
 function renderInfo(){
   if(!lastResult) return;
-  const{sIz,sCz,rhoz,pAct,zmin,zmax}=lastResult;
-  const iz=Math.round(Math.max(0,Math.min(1,(state.zsl-zmin)/(zmax-zmin)))*(NZ-1));
   const L=state.LNorm, d=state.d_nm;
-  const rStr=r=>isFinite(r)?`${r.toFixed(3)}z<sub>T</sub> = ${fmtLen(r*zT_nm())}`:'&infin;';
   const dStr=v=>`${v.toFixed(4)}d = ${fmtLen(v*d)}`;
+  const{dmax,rms}=diffArray();
+  const iz=sliceIndex();
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  let rowMax=0, wMax=0;
+  for(let ix=0;ix<NX;ix++){ rowMax=Math.max(rowMax,Math.abs(Ad[iz*NX+ix]-Wd[iz*NX+ix])); wMax=Math.max(wMax,Wd[iz*NX+ix]); }
   document.getElementById('infoPanel').innerHTML=`<div class="info-grid">
-    <div class="info-head">Source slit at z = &minus;L (L=${L}z<sub>T</sub> = ${fmtLen(L*zT_nm())})</div>
+    <div class="info-head">Shared parameters (L=${L}z<sub>T</sub> = ${fmtLen(L*zT_nm())})</div>
     ${kv('f =', state.f.toFixed(2))}
     ${kv('p<sub>max</sub> =', state.Pmax)}
     ${kv('&sigma;<sub>I</sub>(0) =', dStr(state.sI0))}
     ${kv('&sigma;<sub>c</sub>(0) =', state.sc0>=1e5?'&infin;':dStr(state.sc0))}
     ${kv('z<sub>T</sub> = 2d&sup2;/&lambda; =', fmtLen(zT_nm()))}
-    <div class="info-head">GSM beam at the grating (z = 0)</div>
     ${kv('&sigma;<sub>I</sub>(L) =', dStr(sigIOf(L)))}
-    ${kv('&sigma;<sub>c</sub>(L) =', state.sc0>=1e5?'&infin;':dStr(sigCOf(L)))}
-    ${kv('R(L) =', rStr(rhoOf(L)))}
-    <div class="info-head">GSM beam at the slice z<sub>sl</sub> = ${state.zsl.toFixed(2)}z<sub>T</sub> = ${fmtLen(state.zsl*zT_nm())}</div>
-    ${kv('&sigma;<sub>I</sub>(L+z) =', dStr(sIz[iz]))}
-    ${kv('&sigma;<sub>c</sub>(L+z) =', state.sc0>=1e5?'&infin;':dStr(sCz[iz]))}
-    ${kv('R(L+z) =', rStr(rhoz[iz]))}
-    ${kv('|m&minus;n|<sub>max</sub> =', `${pAct[iz]} (envelope overlap &times; coherence &gt; e<sup>&minus;35</sup>)`)}
+    <div class="info-head">Agreement (${showMF?'microfluidic':'single source'}, ${normPerZ?'per-z':'global'} normalisation)</div>
+    ${kv('max |A&minus;W| / scale =', dmax.toExponential(3))}
+    ${kv('rms (A&minus;W) / scale =', rms.toExponential(3))}
+    ${kv('max |C<sub>A</sub>&minus;C<sub>W</sub>| over z =', lastResult.maxDC!==undefined?lastResult.maxDC.toExponential(3):'&mdash;')}
+    <div class="info-head">At slice z = ${state.zsl.toFixed(2)} z<sub>T</sub> = ${fmtLen(state.zsl*zT_nm())}</div>
+    ${kv('C (Wigner) =', lastSliceContrast.w!==null ? lastSliceContrast.w.toFixed(5) : '&mdash;')}
+    ${kv('C (analytic) =', lastSliceContrast.a!==null ? lastSliceContrast.a.toFixed(5) : '&mdash;')}
+    ${kv('max |A&minus;W| / max W =', (rowMax/(wMax||1)).toExponential(3))}
     <div class="info-head">View</div>
     ${kv('z:', `[${state.zmin.toFixed(1)},&thinsp;${state.zmax.toFixed(1)}] z<sub>T</sub>`)}
     ${kv('x:', `&plusmn;${state.xiHalf}d`)}
-    ${kv('slice:', `z=${state.zsl.toFixed(2)} z<sub>T</sub>`)}
-    <div class="info-head">Contrast at slice z = ${state.zsl.toFixed(2)} z<sub>T</sub></div>
-    ${kv('C (microfluidic) =', lastSliceContrast.mf!==null ? lastSliceContrast.mf.toFixed(4) : '&mdash;')}
-    ${kv('C (single src) =',   lastSliceContrast.ss!==null ? lastSliceContrast.ss.toFixed(4) : '&mdash;')}
   </div>`;
 }
 
@@ -918,14 +1142,12 @@ function arrMax(arr){
 
 function renderAll(){
   if(!lastResult) return;
-  // Each carpet normalises to its own peak so the single-source pattern is
-  // always visible even when the microfluidic sum (many sources) is far larger
-  // in absolute scale.  The slice panel shows both curves independently scaled
-  // to [min,max] and reports the contrast C, so quantitative comparison is
-  // still possible.
-  renderExtended('ssCanvas', lastResult.ss, viridis, scaleFor(lastResult.ss));
-  renderExtended('mfCanvas', lastResult.mf, magma,   scaleFor(lastResult.mf));
-  renderBeam();
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  // Both carpets use the Wigner scale, so equal colours mean equal intensity.
+  const sc=scaleFor(Wd);
+  renderExtended('wCanvas', Wd, showMF?magma:viridis, sc);
+  renderExtended('aCanvas', Ad, showMF?magma:viridis, sc);
+  renderDiff();
   renderSlice();
   renderContrast();
   renderInfo();
@@ -1096,17 +1318,17 @@ function renderCarpetPublication(ctx,cvs,opts){
   ctx.restore();
 }
 
-const ssCanvasEl=document.getElementById('ssCanvas');
-const mfCanvasEl=document.getElementById('mfCanvas');
-ssCanvasEl._hiResDims=pubDims;
-ssCanvasEl._hiResRender=(ctx,cvs)=>renderCarpetPublication(ctx,cvs,{
-  data:lastResult&&lastResult.ss, cmap:viridis,
-  title:'Theoretical interferometry pattern after an optical grating'
+const wCanvasEl=document.getElementById('wCanvas');
+const aCanvasEl=document.getElementById('aCanvas');
+wCanvasEl._hiResDims=pubDims;
+wCanvasEl._hiResRender=(ctx,cvs)=>renderCarpetPublication(ctx,cvs,{
+  data:lastResult&&pick(lastResult.w), cmap:showMF?magma:viridis,
+  title:`Wigner formula: ${showMF?'microfluidic source':'single source'}`
 });
-mfCanvasEl._hiResDims=pubDims;
-mfCanvasEl._hiResRender=(ctx,cvs)=>renderCarpetPublication(ctx,cvs,{
-  data:lastResult&&lastResult.mf, cmap:magma,
-  title:'Theoretical interferometry pattern after a microfluidic grating and an optical grating'
+aCanvasEl._hiResDims=pubDims;
+aCanvasEl._hiResRender=(ctx,cvs)=>renderCarpetPublication(ctx,cvs,{
+  data:lastResult&&pick(lastResult.a), cmap:showMF?magma:viridis,
+  title:`Analytic GSM formula: ${showMF?'microfluidic source':'single source'}`
 });
 
 // Initialise physical-unit display for σ sliders

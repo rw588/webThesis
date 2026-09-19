@@ -408,14 +408,11 @@
 <!-- ══════════════════════════════════════════════ NAV TABS -->
 <nav class="tabs" id="main-tabs">
   <button class="tab-btn active" data-target="panel-overview">Overview</button>
-  <button class="tab-btn" data-target="panel-gsm">Gaussian–Schell Demo</button>
-  <button class="tab-btn" data-target="panel-wigner">Wigner Carpet</button>
   <button class="tab-btn" data-target="panel-micro">Microfluidic Demo</button>
   <button class="tab-btn" data-target="panel-micro-wigner">Microfluidic Wigner</button>
   <button class="tab-btn" data-target="panel-chromatic">Chromatic Wigner</button>
+  <button class="tab-btn" data-target="panel-compare">Wigner vs Analytic</button>
   <button class="tab-btn" data-target="panel-velocity">Velocity Distribution</button>
-  <button class="tab-btn" data-target="panel-fisher">Fisher / CRB</button>
-  <button class="tab-btn" data-target="panel-fisher-sim">Fisher Simulation</button>
   <button class="tab-btn" data-target="panel-deltag">&Delta;g Sensitivity</button>
   <button class="tab-btn" data-target="panel-xray">X-ray Budget</button>
   <button class="tab-btn" data-target="panel-flexure">Flexure Design</button>
@@ -443,16 +440,6 @@
       </div>
 
       <div class="card-grid">
-        <div class="card" onclick="switchTab('panel-gsm')">
-          <div class="card-icon"></div>
-          <h3>Gaussian–Schell Model</h3>
-          <p>Interactive visualisation of the narrow GSM beam propagated through a single grating. This is an analytical solution using the Fresnel approximation. This approximation breaks down at some point, there are visual guides to show the Fresnel approximation breaking down. The tell tale signs of this breakdown are visible in the simulation as double periodicity Lau fringes propagating along the z axis, these should be hyperbolae forming an equal path length condition between slits (m,n).</p>
-        </div>
-        <div class="card" onclick="switchTab('panel-wigner')">
-          <div class="card-icon">𝒲</div>
-          <h3>Wigner Carpet</h3>
-          <p>Exact phase-space propagation of the GSM Talbot carpet via the Wigner function — no Fresnel approximation.</p>
-        </div>
         <div class="card" onclick="switchTab('panel-micro')">
           <div class="card-icon"></div>
           <h3>Microfluidic Analysis</h3>
@@ -472,22 +459,17 @@
         <div class="card" onclick="switchTab('panel-chromatic')">
           <div class="card-icon">𝒲̃</div>
           <h3>Chromatic Wigner</h3>
-          <p>Polychromatic Talbot carpet with Gaussian velocity averaging — analytical damping of fringe orders, per-velocity preview, and contrast vs. z.</p>
+          <p>Polychromatic Talbot carpet from the analytic GSM microfluidic formula, averaged over a Gaussian velocity distribution (first order in &delta;v/v<sub>0</sub>) — per-velocity preview and contrast vs. z.</p>
+        </div>
+        <div class="card" onclick="switchTab('panel-compare')">
+          <div class="card-icon">&#8651;</div>
+          <h3>Wigner vs Analytic</h3>
+          <p>The microfluidic Wigner formula and the analytic GSM formula evaluated side by side with identical parameters: both carpets, their difference map, overlaid slices and contrast C(z).</p>
         </div>
         <div class="card" onclick="switchTab('panel-math')">
           <div class="card-icon">∫</div>
           <h3>Full Derivation</h3>
           <p>Step-by-step derivation: CSD propagation for GSM beams in the Fresnel limit.</p>
-        </div>
-        <div class="card" onclick="switchTab('panel-fisher')">
-          <div class="card-icon">𝓘</div>
-          <h3>Fisher / CRB</h3>
-          <p>Fisher information matrix and Cramér-Rao bounds for the sinusoidal Poisson model λ(ψ)=λ₀[1+C·cos(ψ−φ)]. Sliders for K measurement positions and exposure weights, nuisance-parameter cost ratio, optimiser, and CRB vs phase sweep.</p>
-        </div>
-        <div class="card" onclick="switchTab('panel-fisher-sim')">
-          <div class="card-icon">⟳</div>
-          <h3>Fisher Simulation</h3>
-          <p>Sequential Bayesian experimental design: particle-filter inference on λ₀, C, φ_g with D-optimal and c-optimal point selection. Live fringe, parameter evolution, CRB, and D vs c comparison mode.</p>
         </div>
         <div class="card" onclick="switchTab('panel-deltag')">
           <div class="card-icon">g</div>
@@ -516,47 +498,6 @@
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- ─── GAUSSIAN-SCHELL DEMO ──────────────────────── -->
-  <section class="tab-panel" id="panel-gsm">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">fullGaussianSchellWeb.html</span>
-        <a href="fullGaussianSchellWeb.html" target="_blank">↗ open standalone</a>
-      </div>
-      <!-- ✏️  src points to your file — no changes needed if co-located -->
-      <iframe
-        src="fullGaussianSchellWeb.html"
-        title="Gaussian Schell-Model Interactive Visualizer"
-        loading="lazy"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
-
-  <!-- ─── WIGNER CARPET ───────────────────────────────── -->
-  <section class="tab-panel" id="panel-wigner">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">wignerCarpet.html</span>
-        <a href="wignerCarpet.html" target="_blank">↗ open standalone</a>
-      </div>
-      <iframe
-        src="wignerCarpet.html"
-        title="Wigner–GSM Talbot Carpet"
-        loading="lazy"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
     </div>
   </section>
 
@@ -620,6 +561,26 @@
     </div>
   </section>
 
+  <!-- ─── WIGNER VS ANALYTIC ──────────────────────────── -->
+  <section class="tab-panel" id="panel-compare">
+    <div class="iframe-panel">
+      <div class="iframe-toolbar">
+        <div class="dot green"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <span class="filename">compareWignerAnalytic.html</span>
+        <a href="compareWignerAnalytic.html" target="_blank">↗ open standalone</a>
+      </div>
+      <iframe
+        src="compareWignerAnalytic.html"
+        title="Wigner vs Analytic Microfluidic Carpet"
+        loading="lazy"
+        scrolling="no"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+
   <!-- ─── VELOCITY DISTRIBUTION ──────────────────────── -->
   <section class="tab-panel" id="panel-velocity">
     <div class="iframe-panel">
@@ -633,46 +594,6 @@
       <iframe
         src="velocityDistribution.html"
         title="Velocity Distribution &amp; Contrast"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
-
-  <!-- ─── FISHER / CRB ───────────────────────────────── -->
-  <section class="tab-panel" id="panel-fisher">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">fisher.html</span>
-        <a href="fisher.html" target="_blank">↗ open standalone</a>
-      </div>
-      <iframe
-        src="fisher.html"
-        title="Fisher Information — Sinusoidal Poisson Model"
-        loading="lazy"
-        scrolling="no"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
-
-  <!-- ─── FISHER SIMULATION ───────────────────────────── -->
-  <section class="tab-panel" id="panel-fisher-sim">
-    <div class="iframe-panel">
-      <div class="iframe-toolbar">
-        <div class="dot green"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <span class="filename">fisherSimulation.html</span>
-        <a href="fisherSimulation.html" target="_blank">↗ open standalone</a>
-      </div>
-      <iframe
-        src="fisherSimulation.html"
-        title="Sequential Bayesian Design — Sinusoidal Poisson"
-        loading="lazy"
         scrolling="no"
         allowfullscreen
       ></iframe>
@@ -1142,13 +1063,10 @@ $$
 
   // ── Hash-based deep linking ───────────────────────
   const hashMap = {
-    '#gsm':    'panel-gsm',
-    '#wigner': 'panel-wigner',
     '#micro':        'panel-micro',
     '#micro-wigner': 'panel-micro-wigner',
+    '#compare':      'panel-compare',
     '#velocity':     'panel-velocity',
-    '#fisher':       'panel-fisher',
-    '#fisher-sim':   'panel-fisher-sim',
     '#deltag':       'panel-deltag',
     '#grating-fringe': 'panel-grating-fringe',
     '#math':  'panel-math',

@@ -55,32 +55,36 @@
 <h2>Gaussian-Schell Model &#8212; Polychromatic microfluidic Talbot Carpet</h2>
 <div class="subtitle">
 \[
-\langle I_{\rm mf}\rangle(x,z)
-= \int\!\tilde{A}(v)\,I_{\rm mf}\!\left(x,\,\frac{z}{T_L(v)};\,v\right)dv,
+\langle I_{\text{microfluidic}}\rangle(x,L+z)
+= \int\!\tilde{A}(v)\,I_{\text{microfluidic}}\big(x,L+z;\,\lambda_{\rm dB}(v)\big)\,dv,
 \qquad
 \tilde{A}(v)=\mathcal{N}(v_0,\sigma_v^2),
 \qquad
-T_L(v)=\frac{d^2}{\lambda_{\rm dB}(v)}\propto v
+\lambda_{\rm dB}(v)=\frac{h}{m_{\rm Mu}v},
+\qquad
+z_T(v)=\frac{2d^2}{\lambda_{\rm dB}(v)}\propto v
 \]
 \[
-\langle I_{\rm mf}\rangle(x,\zeta_0)
-= I_0\sqrt{\!\frac{\pi}{\Delta_v}}
-\sum_{m,n} a_m a_n \sqrt{\!\frac{\pi}{A}}\;
-\underbrace{e^{-\pi^2(m-n)^2\zeta_0^2/A}}_{\text{order envelope}}
-\;\underbrace{e^{-\frac{\pi^2}{2}(m-n)^2(m+n)^2\zeta_0^2(\sigma_v/v_0)^2}}_{\text{Gaussian velocity damping}}
-\;\underbrace{e^{\,2\pi i(m-n)\bar{x}_{mn}\pi^2/(A\Delta_v)}}_{\text{fringe phase}}
-\;\sum_s
-\underbrace{e^{-(\bar{x}_{mn}-s)^2\pi^2/(2\sigma_I^2 A\Delta_v)}}_{\text{source Gaussian}}
-\underbrace{e^{-2\pi i(m-n)s\,\pi^2/(A\Delta_v)}}_{\text{source phase}}
+\begin{aligned}
+I_{\text{microfluidic}}(x,L+z)
+&= I_0\frac{\sigma_I(0)}{\sigma_I(L+z)}\sum_{m,n} a_m a_n^*
+\underbrace{e^{i\frac{2\pi}{d}(m-n)x}}_{\text{spatial fringes}}
+\underbrace{e^{-i\pi\frac{\lambda z}{d^2}(m^2-n^2)}}_{\text{Talbot phase}}
+\\[8pt]
+&\quad\times
+\underbrace{\exp\!\left[-\frac{\left(x-\frac{m\lambda z}{d}\right)^2+\left(x-\frac{n\lambda z}{d}\right)^2}{4\sigma_I^2(L+z)}\right]}_{\text{displaced intensity envelopes}}
+\\[8pt]
+&\quad\times
+\underbrace{\exp\!\left[-\frac{(m-n)^2\lambda^2z^2}{2\sigma_c^2(L+z)d^2}\right]}_{\text{transverse coherence}}
+\\[8pt]
+&\quad\times
+\underbrace{\exp\!\left[\frac{ik}{2R(L+z)}\left(\left(x-\frac{m\lambda z}{d}\right)^2-\left(x-\frac{n\lambda z}{d}\right)^2\right)\right]}_{\text{wavefront-curvature phase}}
+\\&\quad\times \sum_{s=-\infty}^{\infty}
+\underbrace{\exp\left[-\frac{s^2d^2}{2\sigma_I^2(L+z)}+\frac{sdx}{\sigma_I^2(L+z)}-\frac{s(m+n)\lambda z}{2\sigma_I^2(L+z)}+i\frac{2\pi s (m-n)z}{R(L+z)}\right]}_{\text{all source-position dependence}}
+\end{aligned}
 \]
-\[
-\bar{x}_{mn} = x - \tfrac{(m+n)\zeta_0}{2},\qquad
-A(\zeta_0) = \tfrac{\zeta_0^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
-\Delta_v = \tfrac{1}{8\sigma_I^2} + \tfrac{1}{2\sigma_c^2},\qquad
-\zeta_0 = \frac{z}{T_L(v_0)},\quad
-T_L(v_0) = \frac{d^2}{\lambda_0},\quad
-\lambda_0 = \frac{h}{m_{\rm Mu}v_0}
-\]
+<p>Velocity average: with \(v=v_0(1+\delta)\), each term's phase \(\Psi\) and envelope centre are expanded to first order in \(\delta\) and averaged over the Gaussian in closed form, e.g. \(\langle e^{i\Psi}\rangle \approx e^{i\Psi(v_0)}\,e^{-\frac{1}{2}\left(\partial_\delta\Psi\right)^2\sigma_v^2/v_0^2}\).</p>
+
 </div>
 
 <div class="canvas-row">
@@ -116,23 +120,22 @@ T_L(v_0) = \frac{d^2}{\lambda_0},\quad
 <hr>
 <div class="controls">
   <div class="ctrl-col">
-    <h3>Grating &amp; Source (at plane L)</h3>
+    <h3>Source slit &amp; grating (&sigma; at the source, z = &minus;L)</h3>
     <div class="slider-row"><label>f &nbsp;(duty cycle)</label><input type="range" id="sl_f" min="0.05" max="0.95" step="0.01" value="0.5"><span id="v_f">0.50</span></div>
     <div class="slider-row"><label>p<sub>max</sub> &nbsp;(orders |m|,|n|)</label><input type="range" id="sl_Pmax" min="1" max="30" step="1" value="8"><span id="v_Pmax">8</span></div>
     <div class="slider-row"><label>&sigma;<sub>I</sub>(0)/d</label><input type="range" id="sl_sI0" min="0.3" max="30" step="0.1" value="0.5"><span id="v_sI0" style="width:130px">0.50d = 50.0nm</span></div>
     <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.1" max="30" step="0.1" value="0.5"><span id="v_sc0" style="width:130px">0.50d = 50.0nm</span></div>
-    <div class="slider-row"><label>T<sub>L</sub>/R(0) &nbsp;(input curvature)</label><input type="range" id="sl_invR0" min="-0.5" max="0.5" step="0.005" value="0"><span id="v_invR0">0.000</span></div>
     <div class="slider-row"><label>d &nbsp;(grating period)</label><input type="number" id="inp_d" min="1" max="10000" step="1" value="100" style="width:70px;background:#1a1a2e;border:1px solid #446;color:#ffcc88;padding:2px 4px;font-family:Consolas;font-size:15px"><span style="width:55px;font-size:14px;color:#88aacc">nm</span></div>
   </div>
   <div class="ctrl-col">
     <h3>Interferometer length, L separates source and grating and measurement point</h3>
     <div class="btn-row" id="lBtns">
-      <button data-l="0.5">L=&frac12;T<sub>L</sub></button>
-      <button data-l="1">L=1T<sub>L</sub></button>
-      <button data-l="30">L=30T<sub>L</sub></button>
-      <button data-l="770">L=770T<sub>L</sub></button>
+      <button data-l="0.5">L=&frac12;z<sub>T</sub></button>
+      <button data-l="1">L=1z<sub>T</sub></button>
+      <button data-l="30">L=30z<sub>T</sub></button>
+      <button data-l="770">L=770z<sub>T</sub></button>
     </div>
-    <div class="slider-row"><label>L / T<sub>L</sub> &nbsp;(dial)</label><input type="range" id="sl_Lnorm" min="-1" max="800" step="0.001" value="0"><span id="v_Lnorm" style="width:90px">1.000 TL</span></div>
+    <div class="slider-row"><label>L / z<sub>T</sub> &nbsp;(dial)</label><input type="range" id="sl_Lnorm" min="-1" max="800" step="0.001" value="0"><span id="v_Lnorm" style="width:90px">1.000 z<sub>T</sub></span></div>
     <div style="text-align:right;font-size:13px;color:#88aacc;margin:-4px 0 2px" id="vp_Lnorm"></div>
     <div class="btn-row" id="xiBtns">
       <button data-xi="5">&plusmn;5d</button>
@@ -144,11 +147,11 @@ T_L(v_0) = \frac{d^2}{\lambda_0},\quad
     <div style="display:none"><input type="range" id="sl_zmax" min="0" max="5000" step="0.1" value="11"><span id="v_zmax">11.0</span></div>
     <div class="btn-row" id="zoomBtns">
       <button data-zoom="full">0 &ndash; 1.25L</button>
-      <button data-zoom="pm10" class="active">L &plusmn; 10T<sub>L</sub></button>
-      <button data-zoom="pm50">L &plusmn; 50T<sub>L</sub></button>
-      <button data-zoom="pm100">L &plusmn; 100T<sub>L</sub></button>
+      <button data-zoom="pm10" class="active">L &plusmn; 10z<sub>T</sub></button>
+      <button data-zoom="pm50">L &plusmn; 50z<sub>T</sub></button>
+      <button data-zoom="pm100">L &plusmn; 100z<sub>T</sub></button>
     </div>
-    <div class="slider-row"><label>Measurement slice Z/T<sub>L</sub>:</label><input type="range" id="sl_zsl" min="0" max="5000" step="0.05" value="1.0"><span id="v_zsl">1.00</span></div>
+    <div class="slider-row"><label>Measurement slice Z/z<sub>T</sub>:</label><input type="range" id="sl_zsl" min="0" max="5000" step="0.05" value="1.0"><span id="v_zsl">1.00</span></div>
     <div class="btn-row"><button id="logBtn">Linear</button><button id="resetBtn">Reset</button></div>
   </div>
   <div class="ctrl-col">
@@ -182,281 +185,222 @@ const viridis= makeColormap([[0,68,1,84],[0.25,59,82,139],[0.5,33,145,140],[0.75
 
 // ─── Worker ───────────────────────────────────────────────────────────────────
 const WORKER_SRC = `
+// Units: x in d, z in z_T = 2d^2/lambda, sigma in d, R in z_T.
+// With zeta = z/z_T: lambda*z/d = 2*zeta*d  (lateral shift per order, Z = 2*zeta)
+//                    pi*lambda*z/d^2 = pi*Z   (Talbot phase)
+//                    k*d^2/(2R) = pi/(2*rho)  (curvature coefficient)
 const TWO_PI = 2*Math.PI;
-const PI2    = Math.PI*Math.PI;
+const LOG_TINY = -35;
 
 function sinc(x){
   if(Math.abs(x)<1e-12) return 1.0;
   return Math.sin(Math.PI*x)/(Math.PI*x);
 }
-
 function gratingCoeffs(Pmax,f){
   const am=new Array(2*Pmax+1);
   for(let k=0;k<=2*Pmax;k++) am[k]=f*sinc((k-Pmax)*f);
   return am;
 }
-
-function gsmPropagate(sI0,sc0,LNorm,invR0){
+// GSM source with a flat wavefront at its waist, propagated a distance ell (z_T units)
+function gsmPropagate(sI0,sc0,ell){
   const sc0sq=Math.max(sc0*sc0,1e-40);
-  const fac=1-LNorm*invR0;
-  // σ_I²(L) = σ_I²(0)·(1−L/R₀)² + (λL)²/(π²σ_c²)  with λ=2 in normalised units
-  let sILsq=sI0*sI0*fac*fac + 4*LNorm*LNorm/(Math.PI*Math.PI*sc0sq);
-  sILsq=Math.max(sILsq,1e-12);
-  const sCLsq=Math.max(sc0sq*sILsq/(sI0*sI0),1e-12);
-  // R(L) = L·[1 + (π·σ_I·σ_c/(λL))²] = L·[1 + (π·sI0·sc0/(2L))²]
-  const rho=(LNorm>1e-12)? LNorm*(1+PI2*sI0*sI0*sc0sq/(4*LNorm*LNorm)) : Infinity;
-  return {sIL:Math.sqrt(sILsq), sCL:Math.sqrt(sCLsq), rho};
+  const pd=1.0/(4.0*sI0*sI0)+1.0/sc0sq;
+  const sIsq=Math.max(sI0*sI0+ell*ell*pd/(Math.PI*Math.PI),1e-12);
+  const sCsq=Math.max(sc0sq*sIsq/(sI0*sI0),1e-12);
+  const rho=(ell>1e-12)? Math.PI*Math.PI*sIsq/(ell*pd) : Infinity;
+  return {sI:Math.sqrt(sIsq), sC:Math.sqrt(sCsq), rho};
 }
 
-/*
- * Computes microfluidic Talbot carpet intensity (or single-source if singleSource=true).
- *
- * Physical source bound: s_max = ceil(2*LNorm)  [from λ/d × L/d in d=1 units]
- * Sources outside this range make negligible geometric contribution.
- *
- * Two inner-loop strategies depending on sigEff vs xiHalf:
- *
- * FAST PATH (sigEff > FAST_THRESH*xiHalf):
- *   When σeff >> view half-width, the Gaussian G(x,xcs)≈G(0,xcs) is nearly
- *   x-independent across the view.  Factorize:
- *     Σ_s G_s · cos(β(x-xcs)) = SR·cos(βx) + SIpos·sin(βx)
- *   where SR,SIpos = Σ_s G_s·cos/sin(β·xcs) — computed via a phasor walk
- *   over sources (no trig in loop).  Then a single pixel phasor walk gives
- *   the whole row.  Cost: O(nSrc + NX) per (q,p,iz).
- *
- * EXACT PATH (small sigEff):
- *   Per-source Gaussian mask + phasor walk over covered pixels.
- *   Cost: O(nSrc × covered_pixels) per (q,p,iz).
- */
-const FAST_THRESH = 2.0;  // sigEff/xiHalf above which to use the fast path
+// Per (m,n) pair at a given z-row, the source at s contributes
+//   A * exp(-(x-s-c0)^2/(2 sI^2)) * exp(i[(2 pi p - beta)(x-s) + Phi])
+// where p=m-n, q=m+n, c0=qZ/2 and
+//   A    = I_0 sigma_I(0)/sigma_I(L+z) a_m a_n exp(-p^2 Z^2/(8 sI^2)) exp(-p^2 Z^2/(2 sC^2))   (envelope overlap x coherence)
+//   beta = 2 cR Z p                                                        (curvature tilt)
+//   Phi  = p q (-pi Z + cR Z^2)                                             (Talbot + curvature phase)
+// using (x-mZ)^2+(x-nZ)^2 = 2(x-qZ/2)^2 + p^2 Z^2/2 and exp(-i 2 pi p s) = 1.
+// I_0 sigma_I(0)/sigma_I(L+z) (I_0 = 1): on-axis intensity of each GSM source beam.
+function rowParams(sI0,sc0,LNorm,zeta){
+  const g=gsmPropagate(sI0,sc0,LNorm+zeta);
+  const Z=2*zeta;
+  const cR=isFinite(g.rho)? Math.PI/(2*g.rho) : 0;
+  return {sI:g.sI, sC:g.sC, rho:g.rho, Z, cR};
+}
+function pairPhase(P,p,q){
+  return {beta:2*P.cR*P.Z*p, Phi:p*q*(-Math.PI*P.Z+P.cR*P.Z*P.Z), c0:q*P.Z/2};
+}
 
-function computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, singleSource, LNorm, sigVoverV0, progressFn){
-  const am = gratingCoeffs(Pmax, f);
+// sdv = sigma_v/v0.  0 → monochromatic.  Otherwise each term is averaged over a
+// Gaussian velocity spread v = v0(1+δ), δ ~ N(0, sdv²): λ ∝ 1/v, so in units of
+// z_T(v0) every distance becomes (L+z)/(1+δ).  The phase Ψ(δ) and the envelope
+// centre c0(δ) of every term are linearised in δ and the Gaussian average done
+// in closed form (magnitudes are taken at v0).
+const DH=1e-4;
+function compute(Pmax,f,sI0,sc0,LNorm,NZ,NX,xiHalf,zmin,zmax,sdv,progressFn){
+  const am=gratingCoeffs(Pmax,f);
+  const dx=2*xiHalf/(NX-1);
+  const dz=NZ>1?(zmax-zmin)/(NZ-1):0;
+  const x0=-xiHalf;
+  const mfArr=new Float32Array(NZ*NX);
+  const ssArr=new Float32Array(NZ*NX);
+  const sIz=new Float64Array(NZ), sCz=new Float64Array(NZ), rhoz=new Float64Array(NZ);
+  const pAct=new Int32Array(NZ);
+  const H0=2*Pmax+4;   // harmonic index h in [-H0, H0]
+  const chrom=sdv>0;
+  const s2=sdv*sdv;
 
-  const Dv    = 1/(8*sIL*sIL) + 1/(2*sCL*sCL);
-  const preDv = Math.sqrt(Math.PI/Dv);
+  for(let iz=0;iz<NZ;iz++){
+    const zeta=zmin+iz*dz;
+    const P=rowParams(sI0,sc0,LNorm,zeta);
+    const Pp=chrom? rowParams(sI0,sc0,LNorm/(1+DH),zeta/(1+DH)) : null;
+    const Pm=chrom? rowParams(sI0,sc0,LNorm/(1-DH),zeta/(1-DH)) : null;
+    const {sI,sC,rho,Z}=P;
+    sIz[iz]=sI; sCz[iz]=sC; rhoz[iz]=rho;
+    const sI2=sI*sI, sC2=sC*sC;
+    const pDamp=Z*Z*(1/(8*sI2)+1/(2*sC2));
+    const pLim=pDamp>0? Math.min(2*Pmax, Math.floor(Math.sqrt(-LOG_TINY/pDamp))) : 2*Pmax;
+    pAct[iz]=pLim;
+    const I0=sI0/sI;
 
-  const dx  = 2*xiHalf/(NX-1),  x0  = -xiHalf;
-  const dz  = NZ>1 ? (zmax-zmin)/(NZ-1) : 0;
-  const arr = new Float32Array(NZ*NX);
-  const sigV0sq = sigVoverV0 * sigVoverV0;  // (σ_v/v₀)² — Gaussian velocity damping
+    // Microfluidic: the infinite sum over s is done exactly by Poisson summation,
+    //   sum_s g(x-s) = sum_k G(2 pi k) e^{i 2 pi k x},
+    //   G(w) = sqrt(2 pi) sI exp(-sI^2 (w+beta)^2/2) e^{-i (w+beta) c0}
+    // so each pair contributes harmonics at spatial frequency (p+k)/d.
+    const hRe=new Float64Array(2*H0+1), hIm=new Float64Array(2*H0+1);
+    const ssRow=new Float64Array(NX);
+    const norm=Math.sqrt(TWO_PI)*sI;
+    const kW=Math.sqrt(-2*LOG_TINY)/(sI*TWO_PI);
 
-  // Source bound derived from the formula itself:
-  //   S_max = ⌈3·σeff(zmax) + ξhalf⌉
-  // where σeff(zmax) is the effective source Gaussian width at the largest z
-  // in the carpet, and ξhalf is the image half-width.
-  // Rationale: a source at |s| = S_max + qζ/2 contributes at x=±ξhalf with
-  // weight exp(-3²/2) ≈ 1%.  Sources beyond this are negligible everywhere in view.
-  const A_zmax      = zmax*zmax/(2*sIL*sIL) + PI2/Dv;
-  const sigEff_zmax = sIL * Math.sqrt(A_zmax * Dv) / Math.PI;
-  const S_max = singleSource ? 0 : Math.ceil(3*sigEff_zmax + xiHalf);
+    for(let km=0;km<=2*Pmax;km++){
+      if(am[km]===0) continue;
+      const m=km-Pmax;
+      for(let kn=0;kn<=2*Pmax;kn++){
+        const n=kn-Pmax;
+        const p=m-n, q=m+n;
+        if(Math.abs(p)>pLim) continue;
+        const amn=am[km]*am[kn];
+        if(amn===0) continue;
+        const logA=-p*p*pDamp;
+        if(logA<LOG_TINY) continue;
+        const A=I0*amn*Math.exp(logA);
+        const {beta,Phi,c0}=pairPhase(P,p,q);
+        const Tp=chrom? pairPhase(Pp,p,q) : null;
+        const Tm=chrom? pairPhase(Pm,p,q) : null;
 
-  for(let iz=0; iz<NZ; iz++){
-    const zeta    = zmin + iz*dz;
-    const zetaSq  = zeta*zeta;
-    const A       = zetaSq/(2*sIL*sIL) + PI2/Dv;
-    const sigEff  = sIL * Math.sqrt(A*Dv) / Math.PI;
-    const sig2eff = 2*sigEff*sigEff;
-    const preA    = preDv * Math.sqrt(Math.PI/A);
-    const outRe   = new Float64Array(NX);
-    const ADv     = A * Dv;
-    const kVelZ   = sigV0sq * zetaSq;  // (σ_v/v₀)²·ζ² — per z-slice
-
-    const useFast = !singleSource && sigEff > FAST_THRESH * xiHalf;
-
-    for(let q = -2*Pmax; q <= 2*Pmax; q++){
-      const qHalfZeta = q * zeta * 0.5;
-      const kVelQZ   = kVelZ * q * q * 0.5;  // (σ_v/v₀)²·ζ²·q²/2 — per (z,q)
-
-      // Source range: physical bound ∩ Gaussian 3σ reach of view window
-      // Gaussian centre of source s is xcs = s + qHalfZeta.
-      // Source contributes when |xcs - x| < 3σeff for some x ∈ [-xiHalf, xiHalf],
-      // i.e. xcs ∈ (-3σeff - xiHalf, 3σeff + xiHalf), i.e. s ∈ (...) - qHalfZeta.
-      let S_lo_q, S_hi_q;
-      if(singleSource){
-        S_lo_q = S_hi_q = 0;
-      } else {
-        const margin = 3*sigEff + xiHalf;
-        S_lo_q = Math.max(-S_max, Math.floor(-qHalfZeta - margin));
-        S_hi_q = Math.min( S_max, Math.ceil (-qHalfZeta + margin));
-      }
-      if(S_lo_q > S_hi_q) continue;
-      const nSrc = S_hi_q - S_lo_q + 1;
-
-      const mMin = Math.max(-Pmax, q - Pmax);
-      const mMax = Math.min( Pmax, q + Pmax);
-
-      if(useFast){
-        // ── Fast factorized path ──────────────────────────────────────────────
-        // Precompute Gaussian weights w_s = exp(-xcs²/sig2eff) (approx G(x,xcs)≈G(0,xcs))
-        // These are shared across all p for this q.
-        const ws = new Float64Array(nSrc);
-        for(let si=0; si<nSrc; si++){
-          const xc = S_lo_q + si + qHalfZeta;
-          ws[si] = Math.exp(-xc*xc / sig2eff);
+        // --- microfluidic harmonics ---
+        const kc=-beta/TWO_PI;
+        const kLo=Math.ceil(kc-kW), kHi=Math.floor(kc+kW);
+        for(let k=kLo;k<=kHi;k++){
+          const h=p+k;
+          if(h<-H0||h>H0) continue;
+          const w=TWO_PI*k+beta;
+          let logMag=-sI2*w*w/2;
+          const ang=Phi-w*c0;
+          if(chrom){
+            const angP=Tp.Phi-(TWO_PI*k+Tp.beta)*Tp.c0;
+            const angM=Tm.Phi-(TWO_PI*k+Tm.beta)*Tm.c0;
+            const d1=(angP-angM)/(2*DH);
+            logMag-=d1*d1*s2/2;
+          }
+          if(logMag<LOG_TINY) continue;
+          const mag=A*norm*Math.exp(logMag);
+          hRe[h+H0]+=mag*Math.cos(ang);
+          hIm[h+H0]+=mag*Math.sin(ang);
         }
 
-        for(let m=mMin; m<=mMax; m++){
-          const n = q - m;
-          if(n < -Pmax || n > Pmax) continue;
-          const p   = m - n;
-          const amn = am[m+Pmax] * am[n+Pmax];
-          if(Math.abs(amn) < 1e-15) continue;
-          const decayArg  = PI2 * p*p * zetaSq / A;
-          if(decayArg > 69) continue;
-          const vDampArg  = PI2 * p * p * kVelQZ;  // π²p²q²ζ²(σ_v/v₀)²/2
-          if(vDampArg > 60) continue;
-          const vDamp     = vDampArg > 0 ? Math.exp(-vDampArg) : 1.0;
-          const coeff     = preA * amn * Math.exp(-decayArg) * vDamp;
-
-          const phaseRate = TWO_PI * p * PI2 / ADv;
-
-          // Source phasor walk: phase of source si is phaseRate*(S_lo_q+si+qHalfZeta)
-          // Successive sources differ by phaseRate in phase.
-          const srcPh0     = phaseRate * (S_lo_q + qHalfZeta);
-          const srcStepCos = Math.cos(phaseRate);
-          const srcStepSin = Math.sin(phaseRate);
-          let sPRe = Math.cos(srcPh0), sPIm = Math.sin(srcPh0);
-          let SR = 0, SIpos = 0;
-          for(let si=0; si<nSrc; si++){
-            SR    += ws[si] * sPRe;
-            SIpos += ws[si] * sPIm;
-            const nr = sPRe*srcStepCos - sPIm*srcStepSin;
-            const ni = sPRe*srcStepSin + sPIm*srcStepCos;
-            sPRe=nr; sPIm=ni;
-          }
-
-          // Pixel phasor walk: contribution at pixel x is coeff*(SR*cos(β·x)+SIpos*sin(β·x))
-          const dPhase  = phaseRate * dx;
-          const stepCos = Math.cos(dPhase);
-          const stepSin = Math.sin(dPhase);
-          const ph0     = phaseRate * x0;
-          let pRe = Math.cos(ph0), pIm = Math.sin(ph0);
-          for(let ix=0; ix<NX; ix++){
-            outRe[ix] += coeff * (SR * pRe + SIpos * pIm);
-            const nr = pRe*stepCos - pIm*stepSin;
-            const ni = pRe*stepSin + pIm*stepCos;
-            pRe=nr; pIm=ni;
-          }
+        // --- single source (s=0) ---
+        //   A exp(-(x-c0)^2/(2 sI^2)) exp(i[kx x + Phi]),  kx = 2 pi p - beta
+        // written as A/sqrt(D) exp(al x^2 + be x + ga) with complex al, be, ga.
+        // Monochromatic: D=1, al=-1/(2sI^2), be=c0/sI^2 + i kx, ga=-c0^2/(2sI^2) + i Phi.
+        // Chromatic: c0 → c0+c1 δ, kx → kx+kx1 δ, Phi → Phi+Phi1 δ, averaged over δ.
+        const kx=TWO_PI*p-beta;
+        let D=1;
+        let alRe=-1/(2*sI2), alIm=0;
+        let beRe=c0/sI2,     beIm=kx;
+        let gaRe=-c0*c0/(2*sI2), gaIm=Phi;
+        if(chrom){
+          const c1=(Tp.c0-Tm.c0)/(2*DH);
+          const kx1=((TWO_PI*p-Tp.beta)-(TWO_PI*p-Tm.beta))/(2*DH);
+          const Phi1=(Tp.Phi-Tm.Phi)/(2*DH);
+          D=1+c1*c1*s2/sI2;
+          // b(x) = B1 x + B0
+          const B1Re=c1/sI2, B1Im=kx1;
+          const B0Re=-c0*c1/sI2, B0Im=Phi1;
+          const f2=s2/(2*D);
+          alRe+=f2*(B1Re*B1Re-B1Im*B1Im);   alIm+=f2*(2*B1Re*B1Im);
+          beRe+=2*f2*(B1Re*B0Re-B1Im*B0Im); beIm+=2*f2*(B1Re*B0Im+B1Im*B0Re);
+          gaRe+=f2*(B0Re*B0Re-B0Im*B0Im);   gaIm+=f2*(2*B0Re*B0Im);
         }
-
-      } else {
-        // ── Exact discrete path ───────────────────────────────────────────────
-        // Per-source Gaussian mask; phasor walk starts at xcs[si] to combine
-        // fringe phase and source phase automatically.
-        const masks = new Array(nSrc);
-        const ilos  = new Int32Array(nSrc);
-        const lens  = new Int32Array(nSrc);
-        const xcs   = new Float64Array(nSrc);
-
-        for(let si=0; si<nSrc; si++){
-          const s  = S_lo_q + si;
-          const xc = s + qHalfZeta;
-          xcs[si]  = xc;
-          const ilo = Math.max(0,    Math.ceil( (xc - 3*sigEff - x0)/dx));
-          const ihi = Math.min(NX-1, Math.floor((xc + 3*sigEff - x0)/dx));
-          ilos[si]  = ilo;
-          lens[si]  = ihi - ilo + 1;
-          if(ilo <= ihi){
-            const mask = new Float32Array(ihi-ilo+1);
-            for(let ix=ilo; ix<=ihi; ix++){
-              const u = x0 + ix*dx - xc;
-              mask[ix-ilo] = Math.exp(-u*u/sig2eff);
-            }
-            masks[si] = mask;
-          }
-        }
-
-        for(let m=mMin; m<=mMax; m++){
-          const n = q - m;
-          if(n < -Pmax || n > Pmax) continue;
-          const p   = m - n;
-          const amn = am[m+Pmax] * am[n+Pmax];
-          if(Math.abs(amn) < 1e-15) continue;
-          const decayArg  = PI2 * p*p * zetaSq / A;
-          if(decayArg > 69) continue;
-          const vDampArg  = PI2 * p * p * kVelQZ;  // π²p²q²ζ²(σ_v/v₀)²/2
-          if(vDampArg > 60) continue;
-          const vDamp     = vDampArg > 0 ? Math.exp(-vDampArg) : 1.0;
-          const coeff     = preA * amn * Math.exp(-decayArg) * vDamp;
-
-          const phaseRate = TWO_PI * p * PI2 / ADv;
-          const dPhase    = phaseRate * dx;
-          const stepCos   = Math.cos(dPhase);
-          const stepSin   = Math.sin(dPhase);
-
-          for(let si=0; si<nSrc; si++){
-            const mask = masks[si];
-            if(!mask) continue;
-            const ilo  = ilos[si];
-            const len  = lens[si];
-            if(len <= 0) continue;
-
-            const ph0 = phaseRate * (x0 + ilo*dx - xcs[si]);
-            let pRe = Math.cos(ph0), pIm = Math.sin(ph0);
-
-            for(let k=0; k<len; k++){
-              outRe[ilo+k] += coeff * mask[k] * pRe;
-              const nr = pRe*stepCos - pIm*stepSin;
-              const ni = pRe*stepSin + pIm*stepCos;
-              pRe=nr; pIm=ni;
-            }
-          }
+        const xc=-beRe/(2*alRe), wid=1/Math.sqrt(-2*alRe);
+        const ilo=Math.max(0,   Math.ceil( (xc-8*wid-x0)/dx));
+        const ihi=Math.min(NX-1,Math.floor((xc+8*wid-x0)/dx));
+        if(ilo>ihi) continue;
+        const xs=x0+ilo*dx;
+        const A0=A/Math.sqrt(D);
+        // v(x) = A0 exp(Q(x)), stepped by r(x) = exp(Q(x+dx)-Q(x)), r(x+dx) = r(x) exp(2 al dx^2)
+        const qRe=alRe*xs*xs+beRe*xs+gaRe, qIm=alIm*xs*xs+beIm*xs+gaIm;
+        const vMag=A0*Math.exp(qRe);
+        let vRe=vMag*Math.cos(qIm), vIm=vMag*Math.sin(qIm);
+        const rLRe=alRe*(2*xs*dx+dx*dx)+beRe*dx, rLIm=alIm*(2*xs*dx+dx*dx)+beIm*dx;
+        const rMag=Math.exp(rLRe);
+        let rRe=rMag*Math.cos(rLIm), rIm=rMag*Math.sin(rLIm);
+        const rrMag=Math.exp(2*alRe*dx*dx), rrAng=2*alIm*dx*dx;
+        const rrRe=rrMag*Math.cos(rrAng), rrIm=rrMag*Math.sin(rrAng);
+        for(let ix=ilo;ix<=ihi;ix++){
+          ssRow[ix]+=vRe;
+          const nr=vRe*rRe-vIm*rIm, ni=vRe*rIm+vIm*rRe;
+          vRe=nr; vIm=ni;
+          const mr=rRe*rrRe-rIm*rrIm, mi=rRe*rrIm+rIm*rrRe;
+          rRe=mr; rIm=mi;
         }
       }
     }
 
-    for(let ix=0; ix<NX; ix++) arr[iz*NX+ix] = Math.max(0, outRe[ix]);
+    for(let ix=0;ix<NX;ix++) ssArr[iz*NX+ix]=Math.max(0,ssRow[ix]);
+
+    // Evaluate the microfluidic Fourier series on the pixel grid
+    const mfRow=new Float64Array(NX);
+    for(let hi=0;hi<=2*H0;hi++){
+      const cRe=hRe[hi], cIm=hIm[hi];
+      if(cRe===0&&cIm===0) continue;
+      const kx=TWO_PI*(hi-H0);
+      let pRe=Math.cos(kx*x0), pIm=Math.sin(kx*x0);
+      const sRe=Math.cos(kx*dx), sIm=Math.sin(kx*dx);
+      for(let ix=0;ix<NX;ix++){
+        mfRow[ix]+=cRe*pRe-cIm*pIm;
+        const nr=pRe*sRe-pIm*sIm, ni=pRe*sIm+pIm*sRe;
+        pRe=nr; pIm=ni;
+      }
+    }
+    for(let ix=0;ix<NX;ix++) mfArr[iz*NX+ix]=Math.max(0,mfRow[ix]);
     if(progressFn && (iz % 10 === 9 || iz === NZ-1)) progressFn(iz+1, NZ);
   }
-  return arr;
+  return {mfArr, ssArr, sIz, sCz, rhoz, pAct};
 }
 
-self.onmessage = function(e){
-  const{msgType} = e.data;
+self.onmessage=function(e){
+  const{msgType,Pmax,f,sI0,sc0,LNorm,NZ,NX,xiHalf,zmin,zmax,v0}=e.data;
+  const t0=Date.now();
 
-  // ── On-demand single-velocity preview ────────────────────────────────────
-  if(msgType === 'preview'){
-    const{Pmax,f,sI0,sc0,LNorm,invR0,NZ,NX,xiHalf,zmin,zmax,velPreview,v0} = e.data;
-    const t0 = Date.now();
-    const scale   = v0 / velPreview;
-    const LNorm_i = LNorm * scale;
-    const zmin_i  = zmin  * scale;
-    const zmax_i  = zmax  * scale;
-    const{sIL, sCL} = gsmPropagate(sI0, sc0, LNorm_i, invR0);
-    const pfMF = (iz,n) => self.postMessage({type:'preview_progress', pct:iz/n*50});
-    const pfSS = (iz,n) => self.postMessage({type:'preview_progress', pct:50+iz/n*50});
-    const mfArr = computeFormula(Pmax,f,sIL,sCL,NZ,NX,xiHalf,zmin_i,zmax_i,false,LNorm_i,0,pfMF);
-    const ssArr = computeFormula(Pmax,f,sIL,sCL,NZ,NX,xiHalf,zmin_i,zmax_i,true, LNorm_i,0,pfSS);
-    const dt = Date.now()-t0;
-    self.postMessage({type:'preview_result', mfArr:mfArr.buffer, ssArr:ssArr.buffer,
-      v:velPreview, dt}, [mfArr.buffer, ssArr.buffer]);
+  // ── On-demand single-velocity preview: distances in units of z_T(v) scale by v0/v ──
+  if(msgType==='preview'){
+    const{velPreview}=e.data;
+    const sc=v0/velPreview;
+    const r=compute(Pmax,f,sI0,sc0,LNorm*sc,NZ,NX,xiHalf,zmin*sc,zmax*sc,0,
+      (iz,n)=>self.postMessage({type:'preview_progress', pct:iz/n*100}));
+    self.postMessage({type:'preview_result', mfArr:r.mfArr.buffer, ssArr:r.ssArr.buffer,
+      v:velPreview, dt:Date.now()-t0}, [r.mfArr.buffer, r.ssArr.buffer]);
     return;
   }
 
-  // ── Main analytical compute (Gaussian damping, no velocity loop) ─────────
-  const{Pmax,f,sI0,sc0,LNorm,invR0,NZ,NX,xiHalf,zmin,zmax,sigVoverV0,v0} = e.data;
-  const t0 = Date.now();
-  const{sIL, sCL, rho} = gsmPropagate(sI0, sc0, LNorm, invR0);
-
-  const pfMF = (iz,n) => self.postMessage({type:'progress', pct:iz/n*50});
-  const pfSS = (iz,n) => self.postMessage({type:'progress', pct:50+iz/n*50});
-
-  const mfArr = computeFormula(Pmax,f,sIL,sCL,NZ,NX,xiHalf,zmin,zmax,false,LNorm,sigVoverV0,pfMF);
-  const ssArr = computeFormula(Pmax,f,sIL,sCL,NZ,NX,xiHalf,zmin,zmax,true, LNorm,sigVoverV0,pfSS);
-
-  // Report source range
-  const Dv_rep  = 1/(8*sIL*sIL) + 1/(2*sCL*sCL);
-  const A_rep   = Math.max(zmax,0.01)**2/(2*sIL*sIL) + Math.PI**2/Dv_rep;
-  const sig_rep = sIL*Math.sqrt(A_rep*Dv_rep)/Math.PI;
-  const S_max   = Math.ceil(3*sig_rep + xiHalf);
-  const dt = Date.now()-t0;
-
+  // ── Velocity-averaged carpet ──
+  const{sigVoverV0}=e.data;
+  const r=compute(Pmax,f,sI0,sc0,LNorm,NZ,NX,xiHalf,zmin,zmax,sigVoverV0,
+    (iz,n)=>self.postMessage({type:'progress', pct:iz/n*100}));
   self.postMessage({
     type:'result',
-    mfArr:mfArr.buffer, ssArr:ssArr.buffer,
-    sIL, sCL, rho, S_lo:-S_max, S_hi:S_max, sig_rep, S_max, dt
-  }, [mfArr.buffer, ssArr.buffer]);
+    mfArr:r.mfArr.buffer, ssArr:r.ssArr.buffer,
+    sIz:r.sIz.buffer, sCz:r.sCz.buffer, rhoz:r.rhoz.buffer, pAct:r.pAct.buffer, dt:Date.now()-t0
+  },[r.mfArr.buffer, r.ssArr.buffer, r.sIz.buffer, r.sCz.buffer, r.rhoz.buffer, r.pAct.buffer]);
 };
 `;
 
@@ -466,7 +410,7 @@ let worker=new Worker(workerURL);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const NX=1024, NZ=400;
-const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,invR0:0,zmin:0,zmax:11,zsl:1.0,xiHalf:10,LNorm:1.0,
+const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,zmin:0,zmax:11,zsl:1.0,xiHalf:10,LNorm:1.0,
                 v0:2175,sigV:70,d_nm:100};
 const NV=15;  // fixed number of display bars in velocity distribution canvas
 let state={...DEFAULTS};
@@ -478,7 +422,7 @@ let previewV=null;        // velocity of current preview selection (pending or s
 let previewComputing=false;
 // Returns the mf/ss arrays to display (preview or averaged)
 function displayData(){ return previewResult || lastResult; }
-function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.invR0}|${s.LNorm}|${s.zmin}|${s.zmax}|${s.xiHalf}|${s.v0}|${s.sigV}`;}
+function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.LNorm}|${s.zmin}|${s.zmax}|${s.xiHalf}|${s.v0}|${s.sigV}`;}
 
 // ─── Physical constants (muonium de Broglie wavelength) ────────────────────
 const H_PLANCK = 6.62607015e-34;    // J·s
@@ -532,13 +476,19 @@ document.getElementById('zoomBtns').querySelectorAll('button').forEach(btn=>{
   });
 });
 
+// ─── GSM propagation (same normalisation as the worker) ────────────────────
+// ell = distance from the source in z_T(v0) units (z_T = 2d²/λ); lengths in d.
+function pdOf()        { return 1/(4*state.sI0*state.sI0) + 1/(state.sc0*state.sc0); }
+function sigIOf(ell)   { return Math.sqrt(state.sI0*state.sI0 + ell*ell*pdOf()/(Math.PI*Math.PI)); }
+function sigCOf(ell)   { return state.sc0*sigIOf(ell)/state.sI0; }
+function rhoOf(ell)    { return ell>1e-12 ? Math.PI*Math.PI*sigIOf(ell)**2/(ell*pdOf()) : Infinity; }
+
 // ─── Sliders ──────────────────────────────────────────────────────────────────
 const sliders={
   f:    ['sl_f',    'v_f',    v=>v.toFixed(2)],
   Pmax: ['sl_Pmax', 'v_Pmax', v=>v.toFixed(0)],
   sI0:  ['sl_sI0',  'v_sI0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
   sc0:  ['sl_sc0',  'v_sc0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
-  invR0:['sl_invR0','v_invR0',v=>v.toFixed(3)],
   zmin: ['sl_zmin', 'v_zmin', v=>v.toFixed(1)],
   zmax: ['sl_zmax', 'v_zmax', v=>v.toFixed(1)],
   zsl:  ['sl_zsl',  'v_zsl',  v=>v.toFixed(2)],
@@ -605,7 +555,7 @@ document.getElementById('velDistCanvas').addEventListener('click', e=>{
     worker.postMessage({
       msgType:'preview',
       Pmax:state.Pmax, f:state.f, sI0:state.sI0, sc0:state.sc0,
-      LNorm:state.LNorm, invR0:state.invR0, NZ, NX,
+      LNorm:state.LNorm, NZ, NX,
       xiHalf:state.xiHalf, zmin:state.zmin, zmax:state.zmax,
       velPreview:clickedV, v0:state.v0,
     });
@@ -616,7 +566,7 @@ document.getElementById('velDistCanvas').addEventListener('click', e=>{
 function refreshPhysicalSpans(){
   const d = state.d_nm;
   const lam_nm = H_PLANCK / (M_Mu * Math.max(1, state.v0)) * 1e9;
-  const TL_nm  = d * d / lam_nm;  // Talbot length in nm
+  const TL_nm  = 2 * d * d / lam_nm;  // Talbot length z_T = 2d²/λ in nm
   // σ_I and σ_c physical spans
   document.getElementById('v_sI0').textContent = `${state.sI0.toFixed(2)}d = ${(state.sI0*d).toFixed(1)}nm`;
   document.getElementById('v_sc0').textContent = `${state.sc0.toFixed(2)}d = ${(state.sc0*d).toFixed(1)}nm`;
@@ -628,8 +578,8 @@ function refreshPhysicalSpans(){
                   : (Lphys_nm/1e6).toFixed(3)+'mm';
   const TL_str = TL_nm < 1e3 ? TL_nm.toFixed(1)+'nm' : (TL_nm/1e3).toFixed(2)+'\u03bcm';
   const Ldisplay = L >= 100 ? L.toFixed(0) : L >= 1 ? L.toFixed(2) : L.toFixed(3);
-  document.getElementById('v_Lnorm').textContent  = Ldisplay + ' TL';
-  document.getElementById('vp_Lnorm').textContent = '= ' + Lphys_str + '  [TL = ' + TL_str + ']';
+  document.getElementById('v_Lnorm').textContent  = Ldisplay + ' z_T';
+  document.getElementById('vp_Lnorm').textContent = '= ' + Lphys_str + '  [z_T = 2d\u00b2/\u03bb = ' + TL_str + ']';
   // λ input
   document.getElementById('inp_lambda').value = lam_nm.toFixed(4);
 }
@@ -753,7 +703,7 @@ function doCompute(){
   document.getElementById('progressBar').style.display='block';
   worker.postMessage({
     Pmax:state.Pmax, f:state.f, sI0:state.sI0, sc0:state.sc0,
-    LNorm:state.LNorm, invR0:state.invR0, NZ, NX,
+    LNorm:state.LNorm, NZ, NX,
     xiHalf:state.xiHalf, zmin:state.zmin, zmax:state.zmax,
     sigVoverV0: state.sigV / Math.max(1, state.v0), v0:state.v0,
   });
@@ -787,21 +737,22 @@ worker.onmessage=function(e){
   }
 
   // t === 'result'
-  const{mfArr,ssArr,sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,dt}=e.data;
+  const{mfArr,ssArr,sIz,sCz,rhoz,pAct,dt}=e.data;
   lastResult={
     mf:new Float32Array(mfArr), ss:new Float32Array(ssArr),
-    sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,
+    sIz:new Float64Array(sIz), sCz:new Float64Array(sCz), rhoz:new Float64Array(rhoz),
+    pAct:new Int32Array(pAct),
     zmin:sentView.zmin,zmax:sentView.zmax,xiHalf:sentView.xiHalf
   };
   lastPhysKey=sentPhysKey; computing=false;
   progressFill.style.width='100%';
   setTimeout(()=>{ progressBar.style.display='none'; progressFill.style.width='0%'; }, 300);
 
-  const srcDesc=`s\u2208[\u00b1${S_max}] = 3\u03c3(z\u2098\u2090\u02e3)+\u03be = 3\u00d7${sig_rep.toFixed(1)}+${state.xiHalf} (${S_hi-S_lo+1} srcs)`;
-  const velDesc = state.sigV<0.5 ? `v\u2080=${state.v0}m/s (\u03b4)` : `v\u2080=${state.v0}\u00b1${state.sigV}m/s \u03c3=${state.sigV}m/s`;
+  const velDesc = state.sigV<0.5 ? `v\u2080=${state.v0}m/s (\u03b4)` : `v\u2080=${state.v0}\u00b1${state.sigV}m/s`;
   document.getElementById('statusLine').textContent=
-    `Done (${dt}\u202fms) | ${velDesc} | \u03bb=${(H_PLANCK/(M_Mu*state.v0)*1e9).toFixed(3)}nm | ${srcDesc} | `+
-    `\u03c3\u1D35(L)=${sIL.toFixed(3)}d | \u03c3\u209C(L)=${sCL.toFixed(3)}d`;
+    `Done (${dt}\u202fms) | ${velDesc} | \u03bb=${(H_PLANCK/(M_Mu*state.v0)*1e9).toFixed(3)}nm | `+
+    `z_T = 2d\u00b2/\u03bb = ${fmtLen(zT_nm())} | \u03a3_s over all sources (Poisson summation) | `+
+    `\u03c3_I(L)=${sigIOf(state.LNorm).toFixed(3)}d | \u03c3_c(L)=${sigCOf(state.LNorm).toFixed(3)}d`;
   renderAll();
   if(pendingCompute) doCompute();
 };
@@ -876,8 +827,9 @@ function renderBeam(){
   const img=ctx.createImageData(W,H);
   const d=img.data;
 
-  const{xiHalf,sIL}=lastResult;
-  const{sI0,sc0,invR0,LNorm}=state;
+  const{xiHalf}=lastResult;
+  const{LNorm}=state;
+  const sIL=sigIOf(LNorm);
 
   // Same absolute scale as ssCanvas
   let vmaxSS=0;
@@ -885,11 +837,8 @@ function renderBeam(){
   const range=vmaxSS||1;
 
   const toDisplay=logScale ? v=>Math.log2(1+Math.max(0,v)) : v=>Math.max(0,v);
-  const sc0sq=Math.max(sc0*sc0,1e-40);
-  function sigAt(z_prop){
-    const fac=1-z_prop*invR0;
-    return Math.sqrt(Math.max(sI0*sI0*fac*fac+4*z_prop*z_prop/(Math.PI*Math.PI*sc0sq),1e-12));
-  }
+  // GSM width after a distance u from the source (z_T units): σ_I(0)² + u²p_d/π²
+  const sigAt=sigIOf;
 
   // row 0 = top = grating (z_prop=LNorm), row H-1 = bottom = source (z_prop=0)
   for(let row=0;row<H;row++){
@@ -1101,33 +1050,31 @@ function kv(k,v){ return `<div class="info-kv"><span class="info-k">${k}</span><
 
 function renderInfo(){
   if(!lastResult) return;
-  const{sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,xiHalf}=lastResult;
-  const Dv   = (1/(8*sIL*sIL) + 1/(2*sCL*sCL));
-  const A_sl = Math.max(state.zsl,0.001)**2/(2*sIL*sIL) + Math.PI**2/Dv;
-  const sigEff_sl = (sIL*Math.sqrt(A_sl*Dv)/Math.PI).toFixed(4);
-  const rhoStr=isFinite(rho)?rho.toFixed(3):'&infin;';
+  const{sIz,sCz,rhoz,pAct,zmin,zmax}=lastResult;
+  const iz=Math.round(Math.max(0,Math.min(1,(state.zsl-zmin)/(zmax-zmin)))*(NZ-1));
+  const L=state.LNorm, d=state.d_nm;
+  const rStr=r=>isFinite(r)?`${r.toFixed(3)}z<sub>T</sub> = ${fmtLen(r*zT_nm())}`:'&infin;';
+  const dStr=v=>`${v.toFixed(4)}d = ${fmtLen(v*d)}`;
   document.getElementById('infoPanel').innerHTML=`<div class="info-grid">
     <div class="info-head">Velocity (&lambda; = h/m<sub>Mu</sub>v)</div>
     ${kv('v<sub>0</sub>:', `${state.v0.toFixed(0)} m/s`)}
-    ${kv('&sigma;<sub>v</sub>:', `${state.sigV.toFixed(0)} m/s &nbsp;(analytical Gaussian damping)`)}
+    ${kv('&sigma;<sub>v</sub>:', `${state.sigV.toFixed(0)} m/s &nbsp;(first-order velocity average)`)}
     ${kv('&lambda;<sub>dB</sub>(v<sub>0</sub>):', `${(lambdaDB(state.v0)*1e9).toFixed(4)} nm`)}
-    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}&thinsp;T<sub>L</sub> = ${fmtLen(state.LNorm*zT_nm())})</div>
+    ${kv('z<sub>T</sub>(v<sub>0</sub>) = 2d&sup2;/&lambda; =', fmtLen(zT_nm()))}
+    <div class="info-head">Source slit at z = &minus;L (L=${L}z<sub>T</sub> = ${fmtLen(L*zT_nm())})</div>
     ${kv('f =', state.f.toFixed(2))}
     ${kv('p<sub>max</sub> =', state.Pmax)}
-    ${kv('&sigma;<sub>I</sub>(0)/d =', state.sI0.toFixed(2))}
-    ${kv('&sigma;<sub>c</sub>(0)/d =', state.sc0.toFixed(2))}
-    ${kv('T<sub>L</sub>/R(0) =', state.invR0.toFixed(3))}
-    ${kv('T<sub>L</sub>(v<sub>0</sub>) =', fmtLen(zT_nm()))}
-    <div class="info-head">GSM beam propagated to grating</div>
-    ${kv('&sigma;<sub>I</sub>(L)/d =', sIL.toFixed(4))}
-    ${kv('&sigma;<sub>c</sub>(L)/d =', sCL.toFixed(4))}
-    ${kv('&rho;/T<sub>L</sub> =', rhoStr)}
-    ${kv('&Delta;<sub>v</sub> =', Dv.toFixed(4))}
-    <div class="info-head">Formula parameters</div>
-    ${kv('A(z<sub>sl</sub>) =', A_sl.toFixed(4))}
-    ${kv('&sigma;<sub>eff</sub>(z<sub>sl</sub>)/d =', sigEff_sl)}
-    ${kv('&sigma;<sub>eff</sub>(z<sub>max</sub>)/d =', sig_rep.toFixed(4))}
-    ${kv('S<sub>max</sub> = 3&sigma;+&xi; =', `3&times;${sig_rep.toFixed(2)}+${xiHalf} = ${S_max} &nbsp;(${S_hi-S_lo+1} srcs)`)}
+    ${kv('&sigma;<sub>I</sub>(0) =', dStr(state.sI0))}
+    ${kv('&sigma;<sub>c</sub>(0) =', dStr(state.sc0))}
+    <div class="info-head">GSM beam at the grating (z = 0), v = v<sub>0</sub></div>
+    ${kv('&sigma;<sub>I</sub>(L) =', dStr(sigIOf(L)))}
+    ${kv('&sigma;<sub>c</sub>(L) =', dStr(sigCOf(L)))}
+    ${kv('R(L) =', rStr(rhoOf(L)))}
+    <div class="info-head">GSM beam at the slice z<sub>sl</sub> = ${fmtLen(state.zsl*zT_nm())}, v = v<sub>0</sub></div>
+    ${kv('&sigma;<sub>I</sub>(L+z) =', dStr(sIz[iz]))}
+    ${kv('&sigma;<sub>c</sub>(L+z) =', dStr(sCz[iz]))}
+    ${kv('R(L+z) =', rStr(rhoz[iz]))}
+    ${kv('|m&minus;n|<sub>max</sub> =', `${pAct[iz]}`)}
     <div class="info-head">View</div>
     ${kv('z:', `[${fmtLen(state.zmin*zT_nm())},&thinsp;${fmtLen(state.zmax*zT_nm())}]`)}
     ${kv('x:', `&plusmn;${state.xiHalf}d`)}

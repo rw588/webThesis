@@ -54,17 +54,19 @@
 <h2>Gaussian-Schell Model &#8212; Microfluidic Talbot Carpet</h2>
 <div class="subtitle">
 \[
-I_\text{mf}(x,z) = I_0\sqrt{\!\frac{\pi}{\Delta_v}}
-\sum_{m,n} a_m a_n \sqrt{\!\frac{\pi}{A}}\;
-\underbrace{e^{-\pi^2(m-n)^2(\lambda z)^2/(Ad^2)}}_{\text{order envelope}}
-\;\underbrace{e^{\,2\pi i(m-n)\,\bar{x}_{mn}\,\pi^2/(A\Delta_v\,d)}}_{\text{fringe phase}}
-\;\sum_s\underbrace{e^{-(\bar{x}_{mn}-sd)^2\pi^2/(2\sigma_I^2 A\Delta_v)}}_{\text{source Gaussian}}
-\underbrace{e^{-2\pi i(m-n)s\,\pi^2/(A\Delta_v)}}_{\text{source phase}}
+I_\text{mf}(x,z) = I_0\,\frac{\pi}{\sqrt{A(z)\Delta_v}}
+\sum_{m,n} a_m a_n\;
+\underbrace{e^{-\frac{\pi^2(m-n)^2(\lambda z)^2}{A(z)d^2}}}_{\text{order-pair suppression}}
+\;\underbrace{e^{\frac{2\pi i}{d}(m-n)\,\bar{x}_{mn}\,\Gamma(z)}}_{\text{fringe phase}}
+\;\sum_{s=-\infty}^{\infty}
+\underbrace{e^{-\frac{(\bar{x}_{mn}-sd)^2}{2\sigma_I(0)^2}\frac{\pi^2}{A(z)\Delta_v}}}_{\text{displaced source Gaussian}}
+\underbrace{e^{\frac{-2\pi i}{d}(m-n)sd\,\Gamma(z)}}_{\text{source fringe offset}}
 \]
 \[
 \bar{x}_{mn} = x - \tfrac{(m+n)\lambda z}{2d},\qquad
-A(z) = \tfrac{(\lambda z)^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
-\Delta_v = \tfrac{1}{8\sigma_I^2} + \tfrac{1}{2\sigma_c^2}
+A(z) = \tfrac{\lambda^2(L+z)^2}{2\sigma_I(0)^2} + \tfrac{\pi^2}{\Delta_v},\qquad
+\Gamma(z) = 1 - \tfrac{\lambda^2 z(L+z)}{2A(z)\sigma_I(0)^2},\qquad
+\Delta_v = \tfrac{1}{8\sigma_I(0)^2} + \tfrac{1}{2\sigma_c(0)^2}
 \]
 </div>
 
@@ -97,16 +99,11 @@ A(z) = \tfrac{(\lambda z)^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
 <hr>
 <div class="controls">
   <div class="ctrl-col">
-    <h3>Grating &amp; Source (at plane L)</h3>
+    <h3>Source slit &amp; grating (&sigma; at the source, z = &minus;L)</h3>
     <div class="slider-row"><label>f &nbsp;(duty cycle)</label><input type="range" id="sl_f" min="0.05" max="0.95" step="0.01" value="0.5"><span id="v_f">0.50</span></div>
     <div class="slider-row"><label>p<sub>max</sub> &nbsp;(orders |m|,|n|)</label><input type="range" id="sl_Pmax" min="1" max="30" step="1" value="8"><span id="v_Pmax">8</span></div>
-    <div class="slider-row"><label>&sigma;<sub>I</sub>(0)/d</label><input type="range" id="sl_sI0" min="0.3" max="30" step="0.1" value="0.5"><span id="v_sI0">0.50</span></div>
-    <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.1" max="30" step="0.1" value="0.5"><span id="v_sc0">0.50</span></div>
-    <div class="slider-row"><label>T<sub>L</sub>/R(0) &nbsp;(input curvature)</label><input type="range" id="sl_invR0" min="-0.5" max="0.5" step="0.005" value="0"><span id="v_invR0">0.000</span></div>
-    <div class="btn-row" id="r0Btns">
-      <button data-r0="inf">R(0)=&infin; (plane wave)</button>
-      <button data-r0="focus">R(0)=0 (focus)</button>
-    </div>
+    <div class="slider-row"><label>&sigma;<sub>I</sub>(0)/d</label><input type="range" id="sl_sI0" min="0.3" max="30" step="0.1" value="0.5"><span id="v_sI0">0.50</span><input type="number" id="inp_sI0" value="0.5" step="0.01" min="0.0001" style="width:64px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:11px;font-family:Consolas;margin-left:2px"></div>
+    <div class="slider-row"><label>&sigma;<sub>c</sub>(0)/d</label><input type="range" id="sl_sc0" min="0.1" max="30" step="0.1" value="0.5"><span id="v_sc0">0.50</span><input type="number" id="inp_sc0" value="0.5" step="0.01" min="0.0001" style="width:64px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:11px;font-family:Consolas;margin-left:2px"></div>
     <div class="slider-row" style="gap:10px;margin-top:4px">
       <label style="width:auto">d (nm):</label>
       <input type="number" id="inp_d" value="100" step="1" min="1" style="width:70px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas">
@@ -117,10 +114,10 @@ A(z) = \tfrac{(\lambda z)^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
   <div class="ctrl-col">
     <h3>Interferometer length, L separates source and grating and measurement point</h3>
     <div class="btn-row" id="lBtns">
-      <button data-l="0.5">L=&frac12;T<sub>L</sub></button>
-      <button data-l="1">L=1T<sub>L</sub></button>
-      <button data-l="30">L=30T<sub>L</sub></button>
-      <button data-l="770">L=770T<sub>L</sub></button>
+      <button data-l="0.5">L=&frac12;z<sub>T</sub></button>
+      <button data-l="1">L=1z<sub>T</sub></button>
+      <button data-l="30">L=30z<sub>T</sub></button>
+      <button data-l="770">L=770z<sub>T</sub></button>
     </div>
     <div class="btn-row" id="xiBtns">
       <button data-xi="5">&plusmn;5d</button>
@@ -131,10 +128,10 @@ A(z) = \tfrac{(\lambda z)^2}{2\sigma_I^2} + \tfrac{\pi^2}{\Delta_v},\qquad
         &plusmn;<input type="number" id="inp_xiUm" step="0.01" min="0.0001" style="width:72px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas;text-align:right">&thinsp;&mu;m
       </span>
     </div>
-    <div class="slider-row"><label>Viewport Z<sub>min</sub>/T<sub>L</sub>:</label><input type="range" id="sl_zmin" min="0" max="800" step="0.5" value="0"><span id="v_zmin">0.0</span></div>
-    <div class="slider-row"><label>Viewport Z<sub>max</sub>/T<sub>L</sub>:</label><input type="number" id="sl_zmax" min="0.1" step="0.5" value="1.5" style="width:80px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas;text-align:right"></div>
-    <div class="slider-row"><label>Measurement slice Z/T<sub>L</sub>:</label><input type="range" id="sl_zsl" min="0" max="800" step="0.05" value="1.0"><span id="v_zsl">1.00</span></div>
-    <div class="btn-row"><button id="logBtn">Linear</button><button id="resetBtn">Reset</button></div>
+    <div class="slider-row"><label>Viewport z<sub>min</sub>/z<sub>T</sub>:</label><input type="range" id="sl_zmin" min="0" max="800" step="0.5" value="0"><span id="v_zmin">0.0</span></div>
+    <div class="slider-row"><label>Viewport z<sub>max</sub>/z<sub>T</sub>:</label><input type="number" id="sl_zmax" min="0.1" step="0.5" value="1.5" style="width:80px;background:#0e1218;color:#ffcc88;border:1px solid #446;padding:2px 4px;font-size:12px;font-family:Consolas;text-align:right"></div>
+    <div class="slider-row"><label>Measurement slice z/z<sub>T</sub>:</label><input type="range" id="sl_zsl" min="0" max="800" step="0.05" value="1.0"><span id="v_zsl">1.00</span></div>
+    <div class="btn-row"><button id="logBtn">Linear</button><button id="normBtn">Norm: global</button><button id="resetBtn">Reset</button></div>
   </div>
 </div>
 <div id="progressBar"><div id="progressFill"></div></div>
@@ -175,17 +172,24 @@ function gratingCoeffs(Pmax,f){
   return am;
 }
 
-function gsmPropagate(sI0,sc0,LNorm,invR0){
-  const sc0sq=Math.max(sc0*sc0,1e-40);
-  const fac=1-LNorm*invR0;
-  // σ_I²(L) = σ_I²(0)·(1−L/R₀)² + (λL)²/(π²σ_c²)  with λ=2 in normalised units
-  let sILsq=sI0*sI0*fac*fac + 4*LNorm*LNorm/(Math.PI*Math.PI*sc0sq);
-  sILsq=Math.max(sILsq,1e-12);
-  const sCLsq=Math.max(sc0sq*sILsq/(sI0*sI0),1e-12);
-  // R(L) = L·[1 + (π·σ_I·σ_c/(λL))²] = L·[1 + (π·sI0·sc0/(2L))²]
-  const rho=(LNorm>1e-12)? LNorm*(1+PI2*sI0*sI0*sc0sq/(4*LNorm*LNorm)) : Infinity;
-  return {sIL:Math.sqrt(sILsq), sCL:Math.sqrt(sCLsq), rho};
-}
+/*
+ * Normalised units used throughout the worker.
+ *
+ *   lengths x, σ_I(0), σ_c(0)  — in grating periods d  (so d = 1)
+ *   distances ζ = z/z_T and ℓ = L/z_T, with the Talbot length z_T = 2d²/λ
+ *
+ * Hence λz/d = 2ζ and λL/d = 2ℓ, which is the substitution applied below to
+ * every λ-bearing term of eqn:microfluidicWigner:
+ *
+ *   x̄_mn = x − (m+n)λz/(2d)              →  x − (m+n)ζ
+ *   A(ζ)  = λ²(L+z)²/(2σ_I(0)²) + π²/Δ_v   →  2(ℓ+ζ)²/σ_I(0)² + π²/Δ_v
+ *   Γ(ζ)  = 1 − λ²z(L+z)/(2Aσ_I(0)²)      →  1 − 2ζ(ℓ+ζ)/(Aσ_I(0)²)
+ *   π²(m−n)²(λz)²/(A d²)               →  4π²(m−n)²ζ²/A
+ *
+ * Γ(ζ) → ℓ/(ℓ+ζ) for large ζ: the geometric demagnification of the fringe
+ * frequency caused by the finite source distance L.  At L = 0 it reduces to
+ * π²/(AΔ_v), the collimated-illumination carpet.
+ */
 
 /*
  * Computes microfluidic Talbot carpet intensity (or single-source if singleSource=true).
@@ -209,44 +213,51 @@ function gsmPropagate(sI0,sc0,LNorm,invR0){
  */
 const FAST_THRESH = 2.0;  // sigEff/xiHalf above which to use the fast path
 
-function computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, singleSource, LNorm, progressFn){
+function computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, singleSource, LNorm, progressFn){
   const am = gratingCoeffs(Pmax, f);
 
-  const Dv    = 1/(8*sIL*sIL) + 1/(2*sCL*sCL);
+  const sI0sq = sI0*sI0;
+  const Dv    = 1/(8*sI0sq) + 1/(2*sc0*sc0);
   const preDv = Math.sqrt(Math.PI/Dv);
 
   const dx  = 2*xiHalf/(NX-1),  x0  = -xiHalf;
   const dz  = NZ>1 ? (zmax-zmin)/(NZ-1) : 0;
   const arr = new Float32Array(NZ*NX);
 
-  // Source bound derived from the formula itself:
-  //   S_max = ⌈3·σeff(zmax) + ξhalf⌉
-  // where σeff(zmax) is the effective source Gaussian width at the largest z
-  // in the carpet, and ξhalf is the image half-width.
-  // Rationale: a source at |s| = S_max + qζ/2 contributes at x=±ξhalf with
-  // weight exp(-3²/2) ≈ 1%.  Sources beyond this are negligible everywhere in view.
-  const A_zmax      = zmax*zmax/(2*sIL*sIL) + PI2/Dv;
-  const sigEff_zmax = sIL * Math.sqrt(A_zmax * Dv) / Math.PI;
-  // Capped so an extreme input curvature (σeff → very large, e.g. the R(0)=0
-  // focus limit) can't blow the source sum up to an intractable size — beyond
-  // this the per-source weight is ~uniform anyway, so the visible pattern has
-  // already converged well before the cap is reached.
-  const S_max = singleSource ? 0 : Math.min(50000, Math.ceil(3*sigEff_zmax + xiHalf));
+  // Outer bound on the source index s, derived from the formula itself.
+  // Source s contributes a Gaussian of width σeff centred at xc = s + (m+n)ζ,
+  // so it is visible somewhere in x ∈ [-ξhalf, ξhalf] when
+  //     |s| ≤ 3·σeff(zmax) + ξhalf + max|(m+n)ζ|,
+  // the last term being the order-pair shift (|m+n| ≤ 2·Pmax).  Leaving it out
+  // clips real sources whenever the shift exceeds the Gaussian reach.
+  const zL_zmax     = LNorm + zmax;
+  const A_zmax      = 2*zL_zmax*zL_zmax/sI0sq + PI2/Dv;
+  const sigEff_zmax = sI0 * Math.sqrt(A_zmax * Dv) / Math.PI;
+  const orderShift  = 2*Pmax*Math.max(Math.abs(zmin), Math.abs(zmax));
+  // Capped so a very wide source Gaussian (large L, large σeff) can't blow the
+  // index range up to an intractable size.  The per-q window below is bounded by
+  // 3σeff+ξhalf regardless, so the cap only ever bites in pathological cases.
+  const S_max = singleSource ? 0
+              : Math.min(200000, Math.ceil(3*sigEff_zmax + xiHalf + orderShift));
 
   for(let iz=0; iz<NZ; iz++){
     const zeta    = zmin + iz*dz;
     const zetaSq  = zeta*zeta;
-    const A       = zetaSq/(2*sIL*sIL) + PI2/Dv;
-    const sigEff  = sIL * Math.sqrt(A*Dv) / Math.PI;
+    const zL      = LNorm + zeta;                   // (L+z), in z_T units
+    const A       = 2*zL*zL/sI0sq + PI2/Dv;
+    // Γ(z): propagation-acquired scaling of the fringe frequency.
+    const Gamma   = 1 - 2*zeta*zL/(A*sI0sq);
+    // σ_eff² = σ_I(0)² A Δ_v/π² = σ_I(0)² + 2(ℓ+ζ)²Δ_v/π² — the sheared source
+    // width after propagating the full distance L+z.
+    const sigEff  = sI0 * Math.sqrt(A*Dv) / Math.PI;
     const sig2eff = 2*sigEff*sigEff;
     const preA    = preDv * Math.sqrt(Math.PI/A);
     const outRe   = new Float64Array(NX);
-    const ADv     = A * Dv;
 
     const useFast = !singleSource && sigEff > FAST_THRESH * xiHalf;
 
     for(let q = -2*Pmax; q <= 2*Pmax; q++){
-      const qHalfZeta = q * zeta * 0.5;
+      const qHalfZeta = q * zeta;   // (m+n)λz/(2d) = (m+n)ζ
 
       // Source range: physical bound ∩ Gaussian 3σ reach of view window
       // Gaussian centre of source s is xcs = s + qHalfZeta.
@@ -282,11 +293,11 @@ function computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, singleSou
           const p   = m - n;
           const amn = am[m+Pmax] * am[n+Pmax];
           if(Math.abs(amn) < 1e-15) continue;
-          const decayArg = PI2 * p*p * zetaSq / A;
+          const decayArg = 4 * PI2 * p*p * zetaSq / A;
           if(decayArg > 69) continue;
           const coeff = preA * amn * Math.exp(-decayArg);
 
-          const phaseRate = TWO_PI * p * PI2 / ADv;
+          const phaseRate = TWO_PI * p * Gamma;
 
           // Source phasor walk: phase of source si is phaseRate*(S_lo_q+si+qHalfZeta)
           // Successive sources differ by phaseRate in phase.
@@ -350,11 +361,11 @@ function computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, singleSou
           const p   = m - n;
           const amn = am[m+Pmax] * am[n+Pmax];
           if(Math.abs(amn) < 1e-15) continue;
-          const decayArg = PI2 * p*p * zetaSq / A;
+          const decayArg = 4 * PI2 * p*p * zetaSq / A;
           if(decayArg > 69) continue;
           const coeff = preA * amn * Math.exp(-decayArg);
 
-          const phaseRate = TWO_PI * p * PI2 / ADv;
+          const phaseRate = TWO_PI * p * Gamma;
           const dPhase    = phaseRate * dx;
           const stepCos   = Math.cos(dPhase);
           const stepSin   = Math.sin(dPhase);
@@ -387,27 +398,26 @@ function computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, singleSou
 }
 
 self.onmessage = function(e){
-  const{Pmax,f,sI0,sc0,LNorm,invR0,NZ,NX,xiHalf,zmin,zmax} = e.data;
+  const{Pmax,f,sI0,sc0,LNorm,NZ,NX,xiHalf,zmin,zmax} = e.data;
   const t0 = Date.now();
-  const{sIL, sCL, rho} = gsmPropagate(sI0, sc0, LNorm, invR0);
-  const mfArr = computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, false, LNorm,
+  const mfArr = computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, false, LNorm,
     (iz, n) => self.postMessage({type:'progress', pct: iz/n*50}));
-  const ssArr = computeFormula(Pmax, f, sIL, sCL, NZ, NX, xiHalf, zmin, zmax, true,  LNorm,
+  const ssArr = computeFormula(Pmax, f, sI0, sc0, NZ, NX, xiHalf, zmin, zmax, true,  LNorm,
     (iz, n) => self.postMessage({type:'progress', pct: 50 + iz/n*50}));
 
   // Report source range — must match the S_max used in computeFormula
-  const Dv_rep      = 1/(8*sIL*sIL) + 1/(2*sCL*sCL);
-  const A_rep       = Math.max(zmax,0.01)**2/(2*sIL*sIL) + Math.PI**2/Dv_rep;
-  const sig_rep     = sIL*Math.sqrt(A_rep*Dv_rep)/Math.PI;   // σeff at z=zmax
-  const S_max       = Math.ceil(3*sig_rep + xiHalf);          // same formula as computeFormula
-  const S_lo        = -S_max;
-  const S_hi        =  S_max;
+  const Dv_rep  = 1/(8*sI0*sI0) + 1/(2*sc0*sc0);
+  const zL_rep  = LNorm + zmax;
+  const A_rep   = 2*zL_rep*zL_rep/(sI0*sI0) + Math.PI**2/Dv_rep;
+  const sig_rep = sI0*Math.sqrt(A_rep*Dv_rep)/Math.PI;   // σeff at z = zmax
+  const shift   = 2*Pmax*Math.max(Math.abs(zmin), Math.abs(zmax));
+  const S_max   = Math.min(200000, Math.ceil(3*sig_rep + xiHalf + shift));
   const dt = Date.now() - t0;
 
   self.postMessage({
     type:'result',
     mfArr:mfArr.buffer, ssArr:ssArr.buffer,
-    sIL, sCL, rho, S_lo, S_hi, sig_rep, S_max, dt
+    sig_rep, S_max, dt
   }, [mfArr.buffer, ssArr.buffer]);
 };
 `;
@@ -418,38 +428,55 @@ let worker=new Worker(workerURL);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const NX=1024, NZ=400;
-// Stand-in for T_L/R(0) → ∞ (i.e. R(0) → 0, a source converging to a point right
-// at the reference plane). Kept finite so the physics never touches literal
-// Infinity/NaN; large enough that the two signs are visually indistinguishable
-// from the true limit (the source-sum bound is separately capped — see S_max
-// in computeFormula — so this stays computationally cheap too).
-const FOCUS_INVR0 = 1e4;
-function fmtInvR0(v){ return Math.abs(v)>=1000 ? `${v<0?'−':''}∞ (R=0)` : v.toFixed(3); }
-const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,invR0:0,zmin:0,zmax:1.5,zsl:1.0,xiHalf:10,LNorm:1.0,lambda_nm:1.6,d_nm:100};
+// σ_c(0) → ∞ is reachable by typing a large value into the numeric box: it sends
+// Δ_v → 1/(8σ_I(0)²), the fully coherent slit.  The beam still spreads with L+z,
+// since under the Wigner shear the momentum spread σ_p² = Δ_v/(2π²) stays finite.
+function fmtSc0(v){ return v>=1e5 ? '∞ (fully coherent)' : `${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`; }
+const DEFAULTS={f:0.5,Pmax:8,sI0:0.5,sc0:0.5,zmin:0,zmax:1.5,zsl:1.0,xiHalf:10,LNorm:1.0,lambda_nm:1.6,d_nm:100};
 let state={...DEFAULTS};
 let lastResult=null, computing=false, pendingCompute=false, lastPhysKey=null, sentPhysKey=null, sentView={};
 let lastSliceContrast={ss:null,mf:null};
-let logScale=false;
-function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.invR0}|${s.LNorm}|${s.zmin}|${s.zmax}|${s.xiHalf}`;}
+let logScale=false, normPerZ=false;
+function physicsKey(s){return`${s.f}|${s.Pmax}|${s.sI0}|${s.sc0}|${s.LNorm}|${s.zmin}|${s.zmax}|${s.xiHalf}`;}
+
+// ─── Formula quantities (same normalisation as the worker) ────────────────
+function DvOf()      { return 1/(8*state.sI0*state.sI0) + 1/(2*state.sc0*state.sc0); }
+function AOf(zeta)   { const zL=state.LNorm+zeta; return 2*zL*zL/(state.sI0*state.sI0) + Math.PI*Math.PI/DvOf(); }
+function GammaOf(z)  { return 1 - 2*z*(state.LNorm+z)/(AOf(z)*state.sI0*state.sI0); }
+function sigEffOf(z) { return state.sI0*Math.sqrt(AOf(z)*DvOf())/Math.PI; }
 
 // ─── Sliders ──────────────────────────────────────────────────────────────────
 const sliders={
   f:    ['sl_f',    'v_f',    v=>v.toFixed(2)],
   Pmax: ['sl_Pmax', 'v_Pmax', v=>v.toFixed(0)],
   sI0:  ['sl_sI0',  'v_sI0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
-  sc0:  ['sl_sc0',  'v_sc0',  v=>`${v.toFixed(2)}d = ${(v*state.d_nm).toFixed(1)}nm`],
-  invR0:['sl_invR0','v_invR0',fmtInvR0],
+  sc0:  ['sl_sc0',  'v_sc0',  fmtSc0],
   zmin: ['sl_zmin', 'v_zmin', v=>v.toFixed(1)],
   zmax: ['sl_zmax', 'v_zmax', v=>v.toFixed(1)],
   zsl:  ['sl_zsl',  'v_zsl',  v=>v.toFixed(2)],
 };
+// σ_I(0) and σ_c(0) also have a numeric input (below) so values smaller than
+// the slider's min (or larger than its max) can be typed in directly.
+const numInputs = {sI0:'inp_sI0', sc0:'inp_sc0'};
 for(const [key,[sid,vid,fmt]] of Object.entries(sliders)){
   const sl=document.getElementById(sid), vl=document.getElementById(vid);
   sl.addEventListener('input',()=>{
     state[key]=parseFloat(sl.value);
     if(vl) vl.textContent=fmt(state[key]);
-    if(key==='invR0') document.querySelectorAll('#r0Btns button').forEach(b=>b.classList.remove('active'));
+    const ni=numInputs[key] && document.getElementById(numInputs[key]);
+    if(ni) ni.value=state[key];
     if(key==='zsl'){if(lastResult)renderAll();} else scheduleCompute();
+  });
+}
+for(const [key,nid] of Object.entries(numInputs)){
+  const [sid,vid,fmt]=sliders[key];
+  document.getElementById(nid).addEventListener('change',()=>{
+    const v=parseFloat(document.getElementById(nid).value);
+    if(!isFinite(v) || v<=0) return;
+    state[key]=v;
+    document.getElementById(sid).value=v; // clamps visually if outside the slider's range
+    document.getElementById(vid).textContent=fmt(v);
+    scheduleCompute();
   });
 }
 
@@ -499,12 +526,12 @@ document.getElementById('inp_xiUm').addEventListener('change', ()=>{
   document.querySelectorAll('#xiBtns button').forEach(b=>b.classList.remove('active'));
   scheduleCompute();
 });
-document.getElementById('r0Btns').querySelectorAll('button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    setSlider('invR0', btn.dataset.r0==='focus' ? FOCUS_INVR0 : 0);
-    document.querySelectorAll('#r0Btns button').forEach(b=>b.classList.toggle('active',b===btn));
-    scheduleCompute();
-  });
+document.getElementById('normBtn').addEventListener('click',()=>{
+  normPerZ=!normPerZ;
+  const btn=document.getElementById('normBtn');
+  btn.textContent=normPerZ?'Norm: per z':'Norm: global';
+  btn.classList.toggle('active',normPerZ);
+  if(lastResult) renderAll();
 });
 document.getElementById('logBtn').addEventListener('click',()=>{
   logScale=!logScale;
@@ -520,6 +547,8 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
       document.getElementById(sid).value=DEFAULTS[key];
       const vl=document.getElementById(vid);
       if(vl) vl.textContent=fmt(DEFAULTS[key]);
+      const ni=numInputs[key] && document.getElementById(numInputs[key]);
+      if(ni) ni.value=DEFAULTS[key];
     }
   }
   state.xiHalf=DEFAULTS.xiHalf; state.LNorm=DEFAULTS.LNorm;
@@ -529,12 +558,10 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   updateXiUmDisplay();
   document.querySelectorAll('#lBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.l)===DEFAULTS.LNorm));
   document.querySelectorAll('#xiBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.xi)===DEFAULTS.xiHalf));
-  document.querySelectorAll('#r0Btns button').forEach(b=>b.classList.toggle('active',(b.dataset.r0==='focus'?FOCUS_INVR0:0)===DEFAULTS.invR0));
   scheduleCompute();
 });
 document.querySelectorAll('#lBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.l)===DEFAULTS.LNorm));
 document.querySelectorAll('#xiBtns button').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.xi)===DEFAULTS.xiHalf));
-document.querySelectorAll('#r0Btns button').forEach(b=>b.classList.toggle('active',(b.dataset.r0==='focus'?FOCUS_INVR0:0)===DEFAULTS.invR0));
 updateXiUmDisplay();
 
 function setSlider(key,val){
@@ -543,6 +570,8 @@ function setSlider(key,val){
   document.getElementById(sid).value=val;
   const vl=document.getElementById(vid);
   if(vl) vl.textContent=fmt(val);
+  const ni=numInputs[key] && document.getElementById(numInputs[key]);
+  if(ni) ni.value=val;
 }
 
 ['mfCanvas','ssCanvas'].forEach(id=>{
@@ -569,7 +598,7 @@ function doCompute(){
   document.getElementById('progressBar').style.display='block';
   worker.postMessage({
     Pmax:state.Pmax, f:state.f, sI0:state.sI0, sc0:state.sc0,
-    LNorm:state.LNorm, invR0:state.invR0, NZ, NX,
+    LNorm:state.LNorm, NZ, NX,
     xiHalf:state.xiHalf, zmin:state.zmin, zmax:state.zmax,
   });
 }
@@ -585,20 +614,20 @@ worker.onmessage=function(e){
     progressFill.style.width=e.data.pct.toFixed(1)+'%';
     return;
   }
-  const{mfArr,ssArr,sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,dt}=e.data;
+  const{mfArr,ssArr,sig_rep,S_max,dt}=e.data;
   lastResult={
     mf:new Float32Array(mfArr), ss:new Float32Array(ssArr),
-    sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,
+    sig_rep,S_max,
     zmin:sentView.zmin,zmax:sentView.zmax,xiHalf:sentView.xiHalf
   };
   lastPhysKey=sentPhysKey; computing=false;
   progressFill.style.width='100%';
   setTimeout(()=>{ progressBar.style.display='none'; progressFill.style.width='0%'; }, 300);
 
-  const srcDesc=`s\u2208[\u00b1${S_max}] = 3\u03c3(z\u2098\u2090\u02e3)+\u03be = 3\u00d7${sig_rep.toFixed(1)}+${state.xiHalf} (${S_hi-S_lo+1} srcs)`;
+  const srcDesc=`s\u2208[\u00b1${S_max}] = 3\u03c3(z\u2098\u2090\u02e3)+\u03be+2p\u2098\u2090\u02e3z (${2*S_max+1} srcs)`;
   document.getElementById('statusLine').textContent=
     `Done (${dt}\u202fms) | ${srcDesc} | `+
-    `\u03c3\u1D35(L)=${sIL.toFixed(3)}d | \u03c3\u209C(L)=${sCL.toFixed(3)}d | `+
+    `\u0394\u1d65=${DvOf().toFixed(4)} | \u0393(0)=${GammaOf(0).toFixed(4)} | \u0393(z_sl)=${GammaOf(state.zsl).toFixed(4)} | `+
     `\u03c3_eff(z_max)=${sig_rep.toFixed(3)}d`;
   renderAll();
   if(pendingCompute) doCompute();
@@ -613,12 +642,32 @@ function fmtLen(nm) {
 }
 function zT_nm() { return 2 * state.d_nm * state.d_nm / state.lambda_nm; }
 
+// ─── Intensity normalisation ────────────────────────────────────────
+// 'global' — one divisor for the whole carpet, so the relative brightness of
+//            different z planes survives: revivals are bright, gaps are dark.
+// 'per z'  — every z row is divided by its own maximum.  This flattens the
+//            overall 1/√A decay and the order-envelope falloff, so the fringe
+//            shape at each plane is visible even far from a revival.  Contrast
+//            C(z) is a ratio and is unaffected by either choice.
+// Both return a function of the row index, so the render loops stay identical.
+function scaleFor(data){
+  if(!normPerZ){ const m=arrMax(data); return ()=>m; }
+  const r=new Float64Array(NZ);
+  for(let iz=0;iz<NZ;iz++){
+    let m=0; const o=iz*NX;
+    for(let ix=0;ix<NX;ix++) if(data[o+ix]>m) m=data[o+ix];
+    r[iz]=m||1;
+  }
+  return iz=>r[iz];
+}
+function normLabel(){ return normPerZ ? 'I / Iₘₐˣ(z)' : 'I / Iₘₐˣ'; }
+
 // ─── Rendering ────────────────────────────────────────────────────────────────
-// vmax: shared upper bound so both carpets are on the same intensity scale.
-// Each carpet uses min=0, max=vmax, so a uniform microfluidic background
-// shows as a solid colour rather than collapsing to black.
+// scale: row index → intensity divisor (see scaleFor).  Each carpet maps
+// [0, scale(iz)] onto the colormap, so a uniform microfluidic background shows
+// as a solid colour rather than collapsing to black.
 // Renders the Talbot carpet for z ∈ [zmin, zmax].
-function renderExtended(canvasId, data, cmap, vmax){
+function renderExtended(canvasId, data, cmap, scale){
   const canvas=document.getElementById(canvasId);
   const ctx=canvas.getContext('2d');
   const W=canvas.width, H=canvas.height;
@@ -626,7 +675,6 @@ function renderExtended(canvasId, data, cmap, vmax){
   const d=img.data;
 
   const{zmin,zmax,xiHalf}=lastResult;
-  const range=vmax||1;
   const totalZ=zmax-zmin;
 
   // Linear: sqrt gamma.  Log: log₂(1+v) maps [0,1]→[0,1].
@@ -636,6 +684,7 @@ function renderExtended(canvasId, data, cmap, vmax){
     // row 0 = top = zmax, row H-1 = bottom = zmin
     const z=zmax-row/(H-1)*totalZ;
     const iz=Math.min(NZ-1,Math.max(0,Math.round((z-zmin)/totalZ*(NZ-1))));
+    const range=scale(iz)||1;
     for(let col=0;col<W;col++){
       const ix=Math.floor(col/(W-1)*(NX-1));
       const v=toDisplay(data[iz*NX+ix]/range);
@@ -671,20 +720,22 @@ function renderBeam(){
   const img=ctx.createImageData(W,H);
   const d=img.data;
 
-  const{xiHalf,sIL}=lastResult;
-  const{sI0,sc0,invR0,LNorm}=state;
+  const{xiHalf}=lastResult;
+  const{LNorm}=state;
+  const sigGrating=sigEffOf(0);   // beam width arriving at the grating
 
-  // Same absolute scale as ssCanvas
+  // Global mode: same absolute scale as ssCanvas.  Per-z mode: each row is
+  // divided by its own peak, which sits at x=0, leaving the bare beam profile.
   let vmaxSS=0;
   for(let i=0;i<lastResult.ss.length;i++) if(lastResult.ss[i]>vmaxSS) vmaxSS=lastResult.ss[i];
-  const range=vmaxSS||1;
+  const rangeGlobal=vmaxSS||1;
 
   const toDisplay=logScale ? v=>Math.log2(1+Math.max(0,v)) : v=>Math.max(0,v);
-  const sc0sq=Math.max(sc0*sc0,1e-40);
-  function sigAt(z_prop){
-    const fac=1-z_prop*invR0;
-    return Math.sqrt(Math.max(sI0*sI0*fac*fac+4*z_prop*z_prop/(Math.PI*Math.PI*sc0sq),1e-12));
-  }
+  // Wigner shear of the GSM source: after a distance u the intensity width is
+  // σ_I(u)² = σ_I(0)² + (λu)²σ_p² with σ_p² = Δ_v/(2π²), i.e. 2u²Δ_v/π² in
+  // z_T units.  At u = L this equals σ_eff(z=0), so the panel joins the carpet.
+  const shear=2*DvOf()/(Math.PI*Math.PI);
+  function sigAt(u){ return Math.sqrt(Math.max(state.sI0*state.sI0+shear*u*u,1e-12)); }
 
   // row 0 = top = grating (z_prop=LNorm), row H-1 = bottom = source (z_prop=0)
   for(let row=0;row<H;row++){
@@ -693,7 +744,8 @@ function renderBeam(){
     const sig2=2*sig*sig;
     for(let col=0;col<W;col++){
       const x=-xiHalf+col/(W-1)*2*xiHalf;
-      const v=toDisplay((sIL/sig)*Math.exp(-x*x/sig2)/range);
+      const v=toDisplay(normPerZ ? Math.exp(-x*x/sig2)
+                                 : (sigGrating/sig)*Math.exp(-x*x/sig2)/rangeGlobal);
       const[r,g,b]=viridis(Math.min(1,v));
       const idx=(row*W+col)*4;
       d[idx]=r;d[idx+1]=g;d[idx+2]=b;d[idx+3]=255;
@@ -790,7 +842,7 @@ function renderSlice(){
   ctx.fillText('0',pad.l-3,pad.t+ph);
   ctx.fillText('max',pad.l-3,pad.t+4);
   ctx.textAlign='center'; ctx.fillStyle='#ccddee';
-  ctx.fillText(`Slice z/T_L = ${state.zsl.toFixed(2)}`,pad.l+pw/2,pad.t-7);
+  ctx.fillText(`Slice z/z_T = ${state.zsl.toFixed(2)}`,pad.l+pw/2,pad.t-7);
   ctx.font='10px Consolas'; ctx.textAlign='left';
   [['#50c8b0', `Single src (s=0)  C=${sss.C.toFixed(3)}`],
    ['#c060ff', `Microfluidic (\u03a3s)  C=${smf.C.toFixed(3)}`]
@@ -866,7 +918,7 @@ function renderContrast(){
   ctx.fillText('0',pad.l-3,pad.t+ph);
   ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
   ctx.textAlign='left';  ctx.fillText(zmin.toFixed(1),pad.l,H-4);
-  ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} T_L`,pad.l+pw,H-4);
+  ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} z_T`,pad.l+pw,H-4);
   ctx.textAlign='center';
   ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
 
@@ -882,33 +934,33 @@ function kv(k,v){ return `<div class="info-kv"><span class="info-k">${k}</span><
 
 function renderInfo(){
   if(!lastResult) return;
-  const{sIL,sCL,rho,S_lo,S_hi,sig_rep,S_max,xiHalf}=lastResult;
-  const Dv   = (1/(8*sIL*sIL) + 1/(2*sCL*sCL));
-  const A_sl = Math.max(state.zsl,0.001)**2/(2*sIL*sIL) + Math.PI**2/Dv;
-  const sigEff_sl = (sIL*Math.sqrt(A_sl*Dv)/Math.PI).toFixed(4);
-  const rhoStr=isFinite(rho)?rho.toFixed(3):'&infin;';
+  const{sig_rep,S_max,xiHalf}=lastResult;
+  const Dv    = DvOf();
+  const A_sl  = AOf(state.zsl);
+  const nSrc  = 2*S_max+1;
   document.getElementById('infoPanel').innerHTML=`<div class="info-grid">
-    <div class="info-head">Source &amp; Grating at plane L (L=${state.LNorm}T<sub>L</sub>)</div>
+    <div class="info-head">Source slit at z = &minus;L (L=${state.LNorm}z<sub>T</sub>)</div>
     ${kv('f =', state.f.toFixed(2))}
     ${kv('p<sub>max</sub> =', state.Pmax)}
-    ${kv('&sigma;<sub>I</sub>(0)/d =', state.sI0.toFixed(2))}
-    ${kv('&sigma;<sub>c</sub>(0)/d =', state.sc0.toFixed(2))}
-    ${kv('T<sub>L</sub>/R(0) =', fmtInvR0(state.invR0))}
-    <div class="info-head">GSM beam propagated to grating</div>
-    ${kv('&sigma;<sub>I</sub>(L)/d =', sIL.toFixed(4))}
-    ${kv('&sigma;<sub>c</sub>(L)/d =', sCL.toFixed(4))}
-    ${kv('&rho;/T<sub>L</sub> =', rhoStr)}
+    ${kv('&sigma;<sub>I</sub>(0)/d =', state.sI0.toFixed(4))}
+    ${kv('&sigma;<sub>c</sub>(0)/d =', state.sc0>=1e5?'&infin;':state.sc0.toFixed(4))}
     ${kv('&Delta;<sub>v</sub> =', Dv.toFixed(4))}
-    <div class="info-head">Formula parameters</div>
+    ${kv('&sigma;<sub>p</sub> =', Math.sqrt(Dv/(2*Math.PI*Math.PI)).toFixed(4))}
+    <div class="info-head">Formula parameters at the slice z<sub>sl</sub> = ${state.zsl.toFixed(2)}z<sub>T</sub></div>
     ${kv('A(z<sub>sl</sub>) =', A_sl.toFixed(4))}
-    ${kv('&sigma;<sub>eff</sub>(z<sub>sl</sub>)/d =', sigEff_sl)}
+    ${kv('&Gamma;(z<sub>sl</sub>) =', GammaOf(state.zsl).toFixed(5))}
+    ${kv('&Gamma;(0) =', GammaOf(0).toFixed(5))}
+    ${kv('fringe period =', `d/&Gamma; = ${(1/Math.max(GammaOf(state.zsl),1e-12)).toFixed(4)}d`)}
+    <div class="info-head">Sheared source width &sigma;<sub>eff</sub> = &sigma;<sub>I</sub>(0)&radic;(A&Delta;<sub>v</sub>)/&pi;</div>
+    ${kv('&sigma;<sub>eff</sub>(0)/d =', sigEffOf(0).toFixed(4))}
+    ${kv('&sigma;<sub>eff</sub>(z<sub>sl</sub>)/d =', sigEffOf(state.zsl).toFixed(4))}
     ${kv('&sigma;<sub>eff</sub>(z<sub>max</sub>)/d =', sig_rep.toFixed(4))}
-    ${kv('S<sub>max</sub> = 3&sigma;+&xi; =', `3&times;${sig_rep.toFixed(2)}+${xiHalf} = ${S_max} &nbsp;(${S_hi-S_lo+1} srcs)`)}
+    ${kv('S<sub>max</sub> =', `3&times;${sig_rep.toFixed(2)}+${xiHalf}+2&times;${state.Pmax}&times;${state.zmax} = ${S_max} &nbsp;(${nSrc} srcs)`)}
     <div class="info-head">View</div>
-    ${kv('z:', `[${state.zmin.toFixed(1)},&thinsp;${state.zmax.toFixed(1)}] T<sub>L</sub>`)}
+    ${kv('z:', `[${state.zmin.toFixed(1)},&thinsp;${state.zmax.toFixed(1)}] z<sub>T</sub>`)}
     ${kv('x:', `&plusmn;${state.xiHalf}d`)}
-    ${kv('slice:', `z=${state.zsl.toFixed(2)} T<sub>L</sub>`)}
-    <div class="info-head">Contrast at slice z = ${state.zsl.toFixed(2)} T<sub>L</sub></div>
+    ${kv('slice:', `z=${state.zsl.toFixed(2)} z<sub>T</sub>`)}
+    <div class="info-head">Contrast at slice z = ${state.zsl.toFixed(2)} z<sub>T</sub></div>
     ${kv('C (microfluidic) =', lastSliceContrast.mf!==null ? lastSliceContrast.mf.toFixed(4) : '&mdash;')}
     ${kv('C (single src) =',   lastSliceContrast.ss!==null ? lastSliceContrast.ss.toFixed(4) : '&mdash;')}
   </div>`;
@@ -927,8 +979,8 @@ function renderAll(){
   // in absolute scale.  The slice panel shows both curves independently scaled
   // to [min,max] and reports the contrast C, so quantitative comparison is
   // still possible.
-  renderExtended('ssCanvas', lastResult.ss, viridis, arrMax(lastResult.ss));
-  renderExtended('mfCanvas', lastResult.mf, magma,   arrMax(lastResult.mf));
+  renderExtended('ssCanvas', lastResult.ss, viridis, scaleFor(lastResult.ss));
+  renderExtended('mfCanvas', lastResult.mf, magma,   scaleFor(lastResult.mf));
   renderBeam();
   renderSlice();
   renderContrast();
@@ -987,7 +1039,7 @@ function renderCarpetPublication(ctx,cvs,opts){
 
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
   if(!lastResult){ return; }
-  const vmax=arrMax(data);
+  const scale=scaleFor(data);
 
   const plotX=PUB_PAD.left, plotY=PUB_PAD.top, plotW=PUB_PLOT_W, plotH=PUB_PLOT_H;
   const textMaxW=W-56;
@@ -1003,7 +1055,7 @@ function renderCarpetPublication(ctx,cvs,opts){
   ty+=12;
   const subtitle=`d = ${state.d_nm} nm   λ = ${state.lambda_nm} nm   f = ${state.f.toFixed(2)}   `+
     `L = ${state.LNorm} z_T   σ_I(0)/d = ${state.sI0.toFixed(2)}   σ_c(0)/d = ${state.sc0.toFixed(2)}   `+
-    `scale = ${logScale?'log₂(1+I)':'linear I'}`;
+    `scale = ${logScale?'log₂(1+I)':'linear I'}   norm = ${normPerZ?'per z plane':'global'}`;
   wrapText(ctx,subtitle,textMaxW).forEach(line=>{ ctx.fillText(line,W/2,ty); ty+=17; });
 
   // Render the intensity data into an offscreen native-resolution canvas
@@ -1017,7 +1069,7 @@ function renderCarpetPublication(ctx,cvs,opts){
   for(let iz=0;iz<NZ;iz++){
     const rowOut=NZ-1-iz; // flip so z increases upward
     for(let ix=0;ix<NX;ix++){
-      const v=toDisplay(data[iz*NX+ix]/vmax);
+      const v=toDisplay(data[iz*NX+ix]/(scale(iz)||1));
       const[r,g,b]=cmap(v);
       const idx=(rowOut*NX+ix)*4;
       d8[idx]=r; d8[idx+1]=g; d8[idx+2]=b; d8[idx+3]=255;
@@ -1096,7 +1148,7 @@ function renderCarpetPublication(ctx,cvs,opts){
   ctx.translate(cbX+cbW+68, cbY+cbH/2);
   ctx.rotate(-Math.PI/2);
   ctx.textAlign='center'; ctx.font='bold 16px Consolas, monospace';
-  ctx.fillText(`Normalised intensity, I / Iₘₐˣ  (${logScale?'log₂':'linear'} scale)`, 0, 0);
+  ctx.fillText(`Normalised intensity, ${normLabel()}  (${logScale?'log₂':'linear'} scale)`, 0, 0);
   ctx.restore();
 }
 
