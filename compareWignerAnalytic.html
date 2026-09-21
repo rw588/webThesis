@@ -1088,7 +1088,9 @@ function renderContrast(){
   ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
   ctx.fillStyle='#aabbcc'; ctx.font='10px Consolas';
   ctx.textAlign='right';
-  ctx.fillText('1',pad.l-3,pad.t+4); ctx.fillText('0',pad.l-3,pad.t+ph); ctx.fillText('C',pad.l-3,pad.t+ph/2+3);
+  [[1,'1.00'],[0.75,'0.75'],[0.5,'0.50'],[0.25,'0.25'],[0,'0']].forEach(([c,lbl])=>ctx.fillText(lbl,pad.l-3,toY(c)+3));
+  ctx.save(); ctx.translate(9,pad.t+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.fillText('C',0,0); ctx.restore();
+  ctx.textAlign='right';
   ctx.textAlign='left';  ctx.fillText(zmin.toFixed(1),pad.l,H-4);
   ctx.textAlign='right'; ctx.fillText(`${zmax.toFixed(1)} z_T`,pad.l+pw,H-4);
   ctx.textAlign='center'; ctx.fillStyle='#ccddee'; ctx.fillText('Contrast C(z)',pad.l+pw/2,pad.t-5);
@@ -1261,7 +1263,7 @@ function renderCarpetPublication(ctx,cvs,opts){
   // ── X axis: grating bar position ──
   const xMaxNm=xiHalf*state.d_nm;
   const xUnit=pickLenUnit(xMaxNm);
-  const xTicks=niceTicks(-xMaxNm/xUnit.div, xMaxNm/xUnit.div, 7);
+  const xTicks=niceTicks(-xMaxNm/xUnit.div, xMaxNm/xUnit.div, 7), fxc=axisFmt(xTicks);
   ctx.strokeStyle=GRID; ctx.lineWidth=1;
   ctx.font='15px Consolas, monospace'; ctx.fillStyle=INK; ctx.textAlign='center';
   xTicks.forEach(tv=>{
@@ -1269,7 +1271,7 @@ function renderCarpetPublication(ctx,cvs,opts){
     const frac=(xNm+xMaxNm)/(2*xMaxNm);
     const px=plotX+frac*plotW;
     ctx.beginPath(); ctx.moveTo(px,plotY+plotH); ctx.lineTo(px,plotY+plotH+7); ctx.stroke();
-    ctx.fillText(fmtTick(tv), px, plotY+plotH+24);
+    ctx.fillText(fxc(tv), px, plotY+plotH+24);
   });
   ctx.font='bold 17px Consolas, monospace';
   ctx.fillText(`Grating bar position, x (${xUnit.unit})`, plotX+plotW/2, plotY+plotH+54);
@@ -1277,14 +1279,14 @@ function renderCarpetPublication(ctx,cvs,opts){
   // ── Y axis: optical axis z ──
   const zminNm=zmin*zT_nm(), zmaxNm=zmax*zT_nm();
   const yUnit=pickLenUnit(Math.max(Math.abs(zminNm),Math.abs(zmaxNm)));
-  const yTicks=niceTicks(zminNm/yUnit.div, zmaxNm/yUnit.div, 8);
+  const yTicks=niceTicks(zminNm/yUnit.div, zmaxNm/yUnit.div, 8), fyc=axisFmt(yTicks);
   ctx.textAlign='right'; ctx.font='15px Consolas, monospace';
   yTicks.forEach(tv=>{
     const zNm=tv*yUnit.div;
     const frac=(zNm-zminNm)/(zmaxNm-zminNm);
     const py=plotY+(1-frac)*plotH;
     ctx.beginPath(); ctx.moveTo(plotX-7,py); ctx.lineTo(plotX,py); ctx.stroke();
-    ctx.fillText(fmtTick(tv), plotX-11, py+5);
+    ctx.fillText(fyc(tv), plotX-11, py+5);
   });
   ctx.save();
   ctx.translate(26, plotY+plotH/2);
@@ -1318,6 +1320,320 @@ function renderCarpetPublication(ctx,cvs,opts){
   ctx.restore();
 }
 
+// ─── Paper-quality line/map figures (white background) ────────────────────────
+const INK='#161616', GRIDC='#c8c8c8', GRIDMIN='#e6e6e6', BORDERC='#333333';
+const COL_W='#1b6ca8', COL_A='#d1495b';
+const LINE_W=980, LINE_H=700;
+const LINE_PAD={left:104,right:42,top:196,bottom:96};
+function lineDims(){ return {width:LINE_W, height:LINE_H}; }
+
+// Shared header: title (wrapped) + parameter subtitle
+function pubHeader(ctx,W,title){
+  ctx.textAlign='center';
+  ctx.font='bold 22px Georgia, "Times New Roman", serif';
+  ctx.fillStyle=INK;
+  let ty=34;
+  wrapText(ctx,title,W-56).forEach(line=>{ ctx.fillText(line,W/2,ty); ty+=27; });
+  ctx.font='14px Consolas, monospace'; ctx.fillStyle='#555555';
+  ty+=10;
+  const sub=`d = ${state.d_nm} nm   λ = ${state.lambda_nm} nm   z_T = 2d²/λ = ${fmtLen(zT_nm())}   f = ${state.f.toFixed(2)}   `+
+    `L = ${state.LNorm} z_T = ${fmtLen(state.LNorm*zT_nm())}   σ_I(0)/d = ${state.sI0.toFixed(2)}   σ_c(0)/d = ${state.sc0.toFixed(2)}   `+
+    `p_max = ${state.Pmax}`;
+  wrapText(ctx,sub,W-56).forEach(line=>{ ctx.fillText(line,W/2,ty); ty+=17; });
+  return ty;
+}
+
+// One formatter per axis so every tick shows the same number of decimals
+function axisFmt(ticks){
+  if(ticks.length<2) return v=>fmtTick(v);
+  const step=Math.abs(ticks[1]-ticks[0]);
+  const dec=Math.max(0,Math.min(6,Math.ceil(-Math.log10(step)+1e-9)));
+  return v=>{
+    const s=(Math.abs(v)<step*1e-6?0:v).toFixed(dec);
+    return s==='-'+(0).toFixed(dec) ? (0).toFixed(dec) : s;
+  };
+}
+
+// Ticks with minor subdivisions: returns {major:[...], minor:[...]}
+function tickSet(min,max,targetN,minorPer){
+  const major=niceTicks(min,max,targetN);
+  const minor=[];
+  if(major.length>1){
+    const step=(major[1]-major[0])/minorPer;
+    for(let v=major[0]-minorPer*step; v<=max+step*0.5; v+=step){
+      if(v<min-1e-12) continue;
+      if(major.some(m=>Math.abs(m-v)<step*1e-6)) continue;
+      minor.push(v);
+    }
+  }
+  return {major,minor};
+}
+
+// C(z) — the paper figure: physical z on the bottom axis, z/z_T on the top axis.
+function renderContrastPublication(ctx,cvs){
+  const W=cvs.width, H=cvs.height;
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+  if(!lastResult) return;
+  const{zmin,zmax}=lastResult;
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  const Cw=new Float64Array(NZ), Ca=new Float64Array(NZ);
+  let cMax=0;
+  for(let iz=0;iz<NZ;iz++){
+    Cw[iz]=rowStats(Wd,iz).C; Ca[iz]=rowStats(Ad,iz).C;
+    cMax=Math.max(cMax,Cw[iz],Ca[iz]);
+  }
+
+  pubHeader(ctx,W,`Fringe contrast C(z): Wigner formula vs analytic GSM formula — ${showMF?'microfluidic source':'single source'}`);
+
+  const plotX=LINE_PAD.left, plotY=LINE_PAD.top;
+  const plotW=W-LINE_PAD.left-LINE_PAD.right, plotH=H-LINE_PAD.top-LINE_PAD.bottom;
+
+  // y range: full 0–1 with 0.25 steps whenever the curves fill it, else a nice
+  // auto range so low-contrast cases stay readable.
+  const yTop = cMax>0.22 ? 1 : Math.max(niceTicks(0,cMax*1.15,5).slice(-1)[0], 1e-6);
+  const yMajorStep = cMax>0.22 ? 0.25 : null;
+  const yT = yMajorStep
+    ? {major:[0,0.25,0.5,0.75,1], minor:[0.05,0.1,0.15,0.2,0.3,0.35,0.4,0.45,0.55,0.6,0.65,0.7,0.8,0.85,0.9,0.95]}
+    : tickSet(0,yTop,6,5);
+
+  // x axis: physical distance along the optical axis (z is stored in z_T units)
+  const zminNm=zmin*zT_nm(), zmaxNm=zmax*zT_nm();
+  const xUnit=pickLenUnit(Math.max(Math.abs(zminNm),Math.abs(zmaxNm)));
+  const xT=tickSet(zminNm/xUnit.div, zmaxNm/xUnit.div, 9, 5);
+
+  const toX=nm=>plotX+(nm-zminNm)/(zmaxNm-zminNm||1)*plotW;
+  const toY=c=>plotY+plotH*(1-Math.max(0,Math.min(1,c/yTop)));
+
+  // Grid
+  ctx.lineWidth=1;
+  ctx.strokeStyle=GRIDMIN;
+  xT.minor.forEach(tv=>{ const px=toX(tv*xUnit.div); ctx.beginPath(); ctx.moveTo(px,plotY); ctx.lineTo(px,plotY+plotH); ctx.stroke(); });
+  yT.minor.forEach(tv=>{ const py=toY(tv); ctx.beginPath(); ctx.moveTo(plotX,py); ctx.lineTo(plotX+plotW,py); ctx.stroke(); });
+  ctx.strokeStyle=GRIDC;
+  xT.major.forEach(tv=>{ const px=toX(tv*xUnit.div); ctx.beginPath(); ctx.moveTo(px,plotY); ctx.lineTo(px,plotY+plotH); ctx.stroke(); });
+  yT.major.forEach(tv=>{ const py=toY(tv); ctx.beginPath(); ctx.moveTo(plotX,py); ctx.lineTo(plotX+plotW,py); ctx.stroke(); });
+
+  // Curves
+  function draw(arr,col,dash){
+    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.setLineDash(dash);
+    for(let iz=0;iz<NZ;iz++){
+      const z=zmin+(zmax-zmin)*iz/(NZ-1);
+      const x=toX(z*zT_nm()), y=toY(arr[iz]);
+      iz===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  draw(Cw,COL_W,[]);
+  draw(Ca,COL_A,[7,4]);
+
+  // Frame
+  ctx.strokeStyle=BORDERC; ctx.lineWidth=1.5; ctx.strokeRect(plotX,plotY,plotW,plotH);
+
+  // x ticks (bottom, physical)
+  ctx.strokeStyle=BORDERC; ctx.fillStyle=INK;
+  ctx.font='15px Consolas, monospace'; ctx.textAlign='center';
+  xT.minor.forEach(tv=>{ const px=toX(tv*xUnit.div); ctx.beginPath(); ctx.moveTo(px,plotY+plotH); ctx.lineTo(px,plotY+plotH+5); ctx.stroke(); });
+  const fx=axisFmt(xT.major);
+  xT.major.forEach(tv=>{
+    const px=toX(tv*xUnit.div);
+    ctx.beginPath(); ctx.moveTo(px,plotY+plotH); ctx.lineTo(px,plotY+plotH+9); ctx.stroke();
+    ctx.fillText(fx(tv), px, plotY+plotH+28);
+  });
+  ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText(`Optical axis, z (${xUnit.unit})`, plotX+plotW/2, plotY+plotH+58);
+
+  // x ticks (top, in Talbot lengths)
+  const xtT=tickSet(zmin,zmax,9,5), ftT=axisFmt(xtT.major);
+  ctx.font='14px Consolas, monospace';
+  xtT.major.forEach(tv=>{
+    const px=toX(tv*zT_nm());
+    if(px<plotX-0.5||px>plotX+plotW+0.5) return;
+    ctx.beginPath(); ctx.moveTo(px,plotY); ctx.lineTo(px,plotY-8); ctx.stroke();
+    ctx.fillText(ftT(tv), px, plotY-15);
+  });
+  ctx.font='bold 15px Consolas, monospace';
+  ctx.fillText('z / z_T', plotX+plotW/2, plotY-38);
+
+  // y ticks
+  ctx.textAlign='right'; ctx.font='15px Consolas, monospace';
+  const fy=axisFmt(yT.major);
+  yT.minor.forEach(tv=>{ const py=toY(tv); ctx.beginPath(); ctx.moveTo(plotX,py); ctx.lineTo(plotX-5,py); ctx.stroke(); });
+  yT.major.forEach(tv=>{
+    const py=toY(tv);
+    ctx.beginPath(); ctx.moveTo(plotX,py); ctx.lineTo(plotX-9,py); ctx.stroke();
+    ctx.fillText(yMajorStep?tv.toFixed(2):fy(tv), plotX-13, py+5);
+  });
+  ctx.save();
+  ctx.translate(26, plotY+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText('Fringe contrast, C = (I_max − I_min)/(I_max + I_min)', 0, 0);
+  ctx.restore();
+
+  // Legend
+  const lx=plotX+plotW-250, ly=plotY+18;
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fillRect(lx-10,ly-16,244,52);
+  ctx.strokeStyle=GRIDC; ctx.lineWidth=1; ctx.strokeRect(lx-10,ly-16,244,52);
+  ctx.font='14px Consolas, monospace'; ctx.textAlign='left';
+  [[COL_W,[],'Wigner formula'],[COL_A,[7,4],'Analytic GSM formula']].forEach(([col,dash,lbl],i)=>{
+    const y=ly+i*22;
+    ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(lx+34,y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=INK; ctx.fillText(lbl,lx+42,y+5);
+  });
+}
+
+// Intensity slice, same styling
+function renderSlicePublication(ctx,cvs){
+  const W=cvs.width, H=cvs.height;
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+  if(!lastResult) return;
+  const iz=sliceIndex();
+  const Wd=pick(lastResult.w), Ad=pick(lastResult.a);
+  const sw=rowStats(Wd,iz), sa=rowStats(Ad,iz);
+  const top=Math.max(sw.mx,sa.mx)||1;
+
+  pubHeader(ctx,W,`Intensity profile at z = ${fmtLen(state.zsl*zT_nm())}: Wigner formula vs analytic GSM formula — ${showMF?'microfluidic source':'single source'}`);
+
+  const plotX=LINE_PAD.left, plotY=LINE_PAD.top;
+  const plotW=W-LINE_PAD.left-LINE_PAD.right, plotH=H-LINE_PAD.top-LINE_PAD.bottom;
+  const xiHalf=lastResult.xiHalf, xMaxNm=xiHalf*state.d_nm;
+  const xUnit=pickLenUnit(xMaxNm);
+  const xT=tickSet(-xMaxNm/xUnit.div, xMaxNm/xUnit.div, 9, 5);
+  const yT=tickSet(0,1,6,5);
+  const toX=nm=>plotX+(nm+xMaxNm)/(2*xMaxNm)*plotW;
+  const toY=v=>plotY+plotH*(1-Math.max(0,Math.min(1,v)));
+
+  ctx.lineWidth=1;
+  ctx.strokeStyle=GRIDMIN;
+  xT.minor.forEach(tv=>{const px=toX(tv*xUnit.div);ctx.beginPath();ctx.moveTo(px,plotY);ctx.lineTo(px,plotY+plotH);ctx.stroke();});
+  yT.minor.forEach(tv=>{const py=toY(tv);ctx.beginPath();ctx.moveTo(plotX,py);ctx.lineTo(plotX+plotW,py);ctx.stroke();});
+  ctx.strokeStyle=GRIDC;
+  xT.major.forEach(tv=>{const px=toX(tv*xUnit.div);ctx.beginPath();ctx.moveTo(px,plotY);ctx.lineTo(px,plotY+plotH);ctx.stroke();});
+  yT.major.forEach(tv=>{const py=toY(tv);ctx.beginPath();ctx.moveTo(plotX,py);ctx.lineTo(plotX+plotW,py);ctx.stroke();});
+
+  function draw(arr,col,dash){
+    ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.setLineDash(dash);
+    for(let ix=0;ix<NX;ix++){
+      const xNm=(-xiHalf+2*xiHalf*ix/(NX-1))*state.d_nm;
+      const x=toX(xNm), y=toY(arr[iz*NX+ix]/top);
+      ix===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  draw(Wd,COL_W,[]);
+  draw(Ad,COL_A,[7,4]);
+
+  ctx.strokeStyle=BORDERC; ctx.lineWidth=1.5; ctx.strokeRect(plotX,plotY,plotW,plotH);
+  ctx.fillStyle=INK; ctx.font='15px Consolas, monospace'; ctx.textAlign='center';
+  ctx.strokeStyle=BORDERC;
+  xT.minor.forEach(tv=>{const px=toX(tv*xUnit.div);ctx.beginPath();ctx.moveTo(px,plotY+plotH);ctx.lineTo(px,plotY+plotH+5);ctx.stroke();});
+  const fxs=axisFmt(xT.major);
+  xT.major.forEach(tv=>{
+    const px=toX(tv*xUnit.div);
+    ctx.beginPath(); ctx.moveTo(px,plotY+plotH); ctx.lineTo(px,plotY+plotH+9); ctx.stroke();
+    ctx.fillText(fxs(tv), px, plotY+plotH+28);
+  });
+  ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText(`Grating bar position, x (${xUnit.unit})`, plotX+plotW/2, plotY+plotH+58);
+  ctx.textAlign='right'; ctx.font='15px Consolas, monospace';
+  yT.minor.forEach(tv=>{const py=toY(tv);ctx.beginPath();ctx.moveTo(plotX,py);ctx.lineTo(plotX-5,py);ctx.stroke();});
+  yT.major.forEach(tv=>{
+    const py=toY(tv);
+    ctx.beginPath(); ctx.moveTo(plotX,py); ctx.lineTo(plotX-9,py); ctx.stroke();
+    ctx.fillText(tv.toFixed(2), plotX-13, py+5);
+  });
+  ctx.save(); ctx.translate(26, plotY+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText('Normalised intensity, I / I_max', 0, 0); ctx.restore();
+
+  const lx=plotX+plotW-290, ly=plotY+18;
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fillRect(lx-10,ly-16,284,52);
+  ctx.strokeStyle=GRIDC; ctx.lineWidth=1; ctx.strokeRect(lx-10,ly-16,284,52);
+  ctx.font='14px Consolas, monospace'; ctx.textAlign='left';
+  [[COL_W,[],`Wigner   C = ${sw.C.toFixed(4)}`],[COL_A,[7,4],`Analytic  C = ${sa.C.toFixed(4)}`]].forEach(([col,dash,lbl],i)=>{
+    const y=ly+i*22;
+    ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(lx+34,y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=INK; ctx.fillText(lbl,lx+42,y+5);
+  });
+}
+
+// Difference map with a symmetric diverging colorbar, on white
+function renderDiffPublication(ctx,cvs){
+  const W=cvs.width, H=cvs.height;
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+  if(!lastResult) return;
+  const{D,dmax}=diffArray();
+  const range=dmax||1;
+  const plotX=PUB_PAD.left, plotY=PUB_PAD.top, plotW=PUB_PLOT_W, plotH=PUB_PLOT_H;
+  pubHeader(ctx,W,`Difference (analytic GSM − Wigner) / max Wigner — ${showMF?'microfluidic source':'single source'}`);
+
+  const off=document.createElement('canvas');
+  off.width=NX; off.height=NZ;
+  const octx=off.getContext('2d');
+  const img=octx.createImageData(NX,NZ);
+  const d8=img.data;
+  for(let iz=0;iz<NZ;iz++){
+    const rowOut=NZ-1-iz;
+    for(let ix=0;ix<NX;ix++){
+      const[r,g,b]=diverging(0.5+0.5*D[iz*NX+ix]/range);
+      const idx=(rowOut*NX+ix)*4;
+      d8[idx]=r; d8[idx+1]=g; d8[idx+2]=b; d8[idx+3]=255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.drawImage(off,0,0,NX,NZ,plotX,plotY,plotW,plotH);
+  ctx.strokeStyle=BORDERC; ctx.lineWidth=1.5; ctx.strokeRect(plotX,plotY,plotW,plotH);
+
+  const{zmin,zmax,xiHalf}=lastResult;
+  const xMaxNm=xiHalf*state.d_nm;
+  const xUnit=pickLenUnit(xMaxNm);
+  const xTicks=niceTicks(-xMaxNm/xUnit.div, xMaxNm/xUnit.div, 7);
+  ctx.strokeStyle=GRIDC; ctx.lineWidth=1;
+  ctx.font='15px Consolas, monospace'; ctx.fillStyle=INK; ctx.textAlign='center';
+  const fxd=axisFmt(xTicks);
+  xTicks.forEach(tv=>{
+    const px=plotX+(tv*xUnit.div+xMaxNm)/(2*xMaxNm)*plotW;
+    ctx.beginPath(); ctx.moveTo(px,plotY+plotH); ctx.lineTo(px,plotY+plotH+7); ctx.stroke();
+    ctx.fillText(fxd(tv), px, plotY+plotH+24);
+  });
+  ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText(`Grating bar position, x (${xUnit.unit})`, plotX+plotW/2, plotY+plotH+54);
+
+  const zminNm=zmin*zT_nm(), zmaxNm=zmax*zT_nm();
+  const yUnit=pickLenUnit(Math.max(Math.abs(zminNm),Math.abs(zmaxNm)));
+  const yTicks=niceTicks(zminNm/yUnit.div, zmaxNm/yUnit.div, 8);
+  ctx.textAlign='right'; ctx.font='15px Consolas, monospace';
+  const fyd=axisFmt(yTicks);
+  yTicks.forEach(tv=>{
+    const py=plotY+(1-(tv*yUnit.div-zminNm)/(zmaxNm-zminNm))*plotH;
+    ctx.beginPath(); ctx.moveTo(plotX-7,py); ctx.lineTo(plotX,py); ctx.stroke();
+    ctx.fillText(fyd(tv), plotX-11, py+5);
+  });
+  ctx.save(); ctx.translate(26, plotY+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.font='bold 17px Consolas, monospace';
+  ctx.fillText(`Optical axis, z (${yUnit.unit})`, 0, 0); ctx.restore();
+
+  const cbX=plotX+plotW+34, cbW=24, cbY=plotY, cbH=plotH, cbSteps=256;
+  for(let i=0;i<cbSteps;i++){
+    const f=i/(cbSteps-1);
+    const[r,g,b]=diverging(f);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.fillRect(cbX, cbY+cbH-f*cbH-cbH/cbSteps-1, cbW, cbH/cbSteps+2);
+  }
+  ctx.strokeStyle=BORDERC; ctx.lineWidth=1.5; ctx.strokeRect(cbX,cbY,cbW,cbH);
+  ctx.textAlign='left'; ctx.font='14px Consolas, monospace'; ctx.fillStyle=INK;
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y=cbY+cbH*(1-f);
+    ctx.strokeStyle=GRIDC; ctx.beginPath(); ctx.moveTo(cbX+cbW,y); ctx.lineTo(cbX+cbW+6,y); ctx.stroke();
+    ctx.fillStyle=INK; ctx.fillText(((2*f-1)*range).toExponential(2), cbX+cbW+9, y+5);
+  });
+  ctx.save(); ctx.translate(cbX+cbW+96, cbY+cbH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.font='bold 16px Consolas, monospace';
+  ctx.fillText('(analytic − Wigner) / max Wigner', 0, 0); ctx.restore();
+}
+
 const wCanvasEl=document.getElementById('wCanvas');
 const aCanvasEl=document.getElementById('aCanvas');
 wCanvasEl._hiResDims=pubDims;
@@ -1330,6 +1646,16 @@ aCanvasEl._hiResRender=(ctx,cvs)=>renderCarpetPublication(ctx,cvs,{
   data:lastResult&&pick(lastResult.a), cmap:showMF?magma:viridis,
   title:`Analytic GSM formula: ${showMF?'microfluidic source':'single source'}`
 });
+
+const dCanvasEl=document.getElementById('dCanvas');
+dCanvasEl._hiResDims=pubDims;
+dCanvasEl._hiResRender=renderDiffPublication;
+const sliceCanvasEl=document.getElementById('sliceCanvas');
+sliceCanvasEl._hiResDims=lineDims;
+sliceCanvasEl._hiResRender=renderSlicePublication;
+const contrastCanvasEl=document.getElementById('contrastCanvas');
+contrastCanvasEl._hiResDims=lineDims;
+contrastCanvasEl._hiResRender=renderContrastPublication;
 
 // Initialise physical-unit display for σ sliders
 document.getElementById('v_sI0').textContent = `${state.sI0.toFixed(2)}d = ${(state.sI0*state.d_nm).toFixed(1)}nm`;
